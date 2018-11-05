@@ -63,11 +63,11 @@ public class SendRTT implements  Runnable{
 
         byte[] sourceIP = socket.getLocalAddress().getHostAddress().getBytes();
 
-        byte sourcePort = (byte)socket.getLocalPort();
+        byte[] sourcePort = ByteBuffer.allocate(4).putInt(socket.getLocalPort()).array();
 
         byte[] destIP = myNode.getIP().getBytes();
 
-        byte destPort = (byte)myNode.getPort();
+        byte[] destPort = ByteBuffer.allocate(4).putInt(myNode.getPort()).array();
 
         byte[] message = new byte[64000];
 
@@ -87,7 +87,12 @@ public class SendRTT implements  Runnable{
         }
 
 //      third 30 bytes
-        message[60] = sourcePort;
+        int index = 60;
+        for(int i = 0; i < sourcePort.length; i++) {
+
+            message[index++] = sourcePort[i];
+
+        }
 
 //      fourth 30 bytes
         index = 90;
@@ -98,7 +103,12 @@ public class SendRTT implements  Runnable{
         }
 
 //      fifth 30 bytes
-        message[120] = destPort;
+        index = 120;
+        for(int i = 0; i < destPort.length; i++) {
+
+            message[index++] = destPort[i];
+
+        }
 
         int timeSent = (int)System.currentTimeMillis();
 
