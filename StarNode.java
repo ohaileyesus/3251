@@ -9,9 +9,11 @@ public class StarNode{
 
     //POC Connect Thread
 
-    //Receiving Messages Thread
+    //Receiving Messages Thread - Omega
+    Thread receiveThread = new Thread(new ReceiveMultiThread()); 
+    receiveThread.start();
 
-    //Calculating RTT Thread
+    //Calculating RTT Thread - Yizra
     
     //Sending content Thread
 
