@@ -59,7 +59,7 @@ public class SendRTT implements  Runnable{
 
     public byte[] preparePacket(MyNode myNode) {
 
-        byte[] packetType = "RTTM".getBytes();
+        byte[] packetType = "RTTm".getBytes();
 
         byte[] sourceIP = socket.getLocalAddress().getHostAddress().getBytes();
 
