@@ -1,12 +1,24 @@
 public class MyNode{
-    String name;
-    String ip;
-    String port;
 
-    public MyNode(String name, String ip, String port) {
+    private String name;
+    private String ip;
+    private int port;
+
+    public MyNode(String name, String ip, int port) {
         this.name = name;
         this.ip = ip;
         this.port = port;
     }
 
+    public String getName() {
+        return name;
+    }
+
+    public String getIP() {
+        return ip;
+    }
+
+    public int getPort() {
+        return port;
+    }
 }
