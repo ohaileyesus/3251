@@ -1,5 +1,9 @@
+import java.net.DatagramSocket;
+import java.util.HashMap;
+import java.util.Map;
+
 public class StarNode{
-    public Set<MyNode> knownNodes = new Set<MyNode>();
+    public Map<String, MyNode> knownNodes = new HashMap<String, MyNode>();
     MyNode hub;
 
     MyNode currentNode = //new MyNode(....);

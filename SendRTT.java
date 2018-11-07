@@ -4,16 +4,17 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.util.Set;
+import java.util.Map;
 
 public class SendRTT implements  Runnable{
 
-
-    private Set<MyNode> knownNodes;
+    private String nodeName;
+    private Map<String, MyNode> knownNodes;
     DatagramSocket socket;
 
 
-    public SendRTT(DatagramSocket socket, Set<MyNode> knownNodes) {
+    public SendRTT(String nodeName, DatagramSocket socket, Map<String, MyNode> knownNodes) {
+        this.nodeName = nodeName;
         this.socket = socket;
         this.knownNodes = knownNodes;
     }
@@ -25,7 +26,9 @@ public class SendRTT implements  Runnable{
 
             while (true) {
 
-                for (MyNode myNode : knownNodes) {
+                for (String name : knownNodes.keySet()) {
+
+                    MyNode myNode = knownNodes.get(name);
 
                     InetAddress ipAddress = InetAddress.getByAddress(myNode.getIP().getBytes());
 
@@ -61,13 +64,9 @@ public class SendRTT implements  Runnable{
 
         byte[] packetType = "RTTm".getBytes();
 
-        byte[] sourceIP = socket.getLocalAddress().getHostAddress().getBytes();
+        byte[] sourceName = nodeName.getBytes();
 
-        byte[] sourcePort = ByteBuffer.allocate(4).putInt(socket.getLocalPort()).array();
-
-        byte[] destIP = myNode.getIP().getBytes();
-
-        byte[] destPort = ByteBuffer.allocate(4).putInt(myNode.getPort()).array();
+        byte[] destName = myNode.getName().getBytes();
 
         byte[] message = new byte[64000];
 
@@ -78,35 +77,19 @@ public class SendRTT implements  Runnable{
             message[i] = packetType[i];
 
         }
-//      second 30 bytes
+//      next 16 bytes (starNode name is max 16 characters)
         int index = 30;
-        for(int i = 0; i < sourceIP.length; i++) {
+        for(int i = 0; i < sourceName.length; i++) {
 
-            message[index++] = sourceIP[i];
-
-        }
-
-//      third 30 bytes
-        int index = 60;
-        for(int i = 0; i < sourcePort.length; i++) {
-
-            message[index++] = sourcePort[i];
+            message[index++] = sourceName[i];
 
         }
 
-//      fourth 30 bytes
-        index = 90;
-        for(int i = 0; i < destIP.length; i++) {
+//      next 16 bytes (starNode name is max 16 characters)
+        index = 46;
+        for(int i = 0; i < destName.length; i++) {
 
-            message[index++] = destIP[i];
-
-        }
-
-//      fifth 30 bytes
-        index = 120;
-        for(int i = 0; i < destPort.length; i++) {
-
-            message[index++] = destPort[i];
+            message[index++] = destName[i];
 
         }
 
@@ -114,12 +97,9 @@ public class SendRTT implements  Runnable{
 
         byte[] timeSentBytes = ByteBuffer.allocate(4).putInt(timeSent).array();
 
-//        to decode
-//        int timeReceived = ByteBuffer.wrap(bytes).getInt();
-
 
 //      start of body
-        index = 150;
+        index = 62;
         for (int i = 0; i < timeSentBytes.length; i++) {
 
             message[index++] = timeSentBytes[i];

@@ -1,9 +1,28 @@
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.Set;
+
 public class ReceiveMultiThread implements Runnable {
 
-    private Set<MyNode> knownNodes;
-    DatagramSocket socket;
+    private String nodeName;
+    private Map<String, MyNode> knownNodes;
+    private DatagramSocket socket;
 
-    public ReceiveMultiThread(DatagramSocket socket, Set<MyNode> knownNodes) {
+    private Map<String, Integer> rttSums;
+
+    private int rttCount = 0;
+    private int rttSum = 0;
+
+    public ReceiveMultiThread(String nodeName, DatagramSocket socket, Map<String, MyNode> knownNodes) {
+        this.nodeName = nodeName;
         this.socket = socket;
         this.knownNodes = knownNodes;
     }
@@ -16,7 +35,7 @@ public class ReceiveMultiThread implements Runnable {
                 //receive packet
                 byte[] message1 = new byte[64000];
                 DatagramPacket receivePacket = new DatagramPacket(message1, message1.length);
-                serverSocket.receive(receivePacket);
+                socket.receive(receivePacket);
                 byte[] receivedData = receivePacket.getData();
 
                 String msgType = new String(Arrays.copyOfRange(receivedData, 0, 30));
@@ -24,7 +43,7 @@ public class ReceiveMultiThread implements Runnable {
                 if (msgType.equals("PD")) {
 
                     //read knownNodes list from object input stream
-                    ByteArrayInputStream in = new ByteArrayInputStream(Arrays.copyOfRange(receivedData, 150, receivedData.length - 1));
+                    ByteArrayInputStream in = new ByteArrayInputStream(Arrays.copyOfRange(receivedData, 62, receivedData.length));
                     ObjectInputStream is = new ObjectInputStream(in);
                     try {
                         Set<MyNode> nodesToAppend = (Set<MyNode>) is.readObject();
@@ -45,32 +64,83 @@ public class ReceiveMultiThread implements Runnable {
                     os.writeObject(knownNodes);
 
                     //update every node with new knownNodes set
-                    for(MyNode neighbor: knownNodes) {
-                        byte[] dataToSend = preparePacket(neighbor, "PD");
-                        sendPacket = new DatagramPacket(dataToSend, dataToSend.length, neighbor.ip, neighbor.port);
-                        serverSocket.send(sendPacket);
+                    for (String name : knownNodes.keySet()) {
+                        MyNode neighbor = knownNodes.get(name);
+                        byte[] dataToSend = prepareHeader(neighbor, "PD");
+                        InetAddress ipAddress = InetAddress.getByAddress(neighbor.getIP().getBytes());
+                        DatagramPacket sendPacket = new DatagramPacket(dataToSend, dataToSend.length, ipAddress, neighbor.getPort());
+                        socket.send(sendPacket);
                     }
 
 
-
-
-
-
-
-
                 } else if (msgType.equals("RTTm")) {
-                    sendPacket = new DatagramPacket();
-                    serverSocket.send(sendPacket);
 
+//                  change RTTm to RTTr
+                    receivedData[3] = 'r';
 
+//                  read star node name from messageBytes to get IP and port
+                    String name = new String(Arrays.copyOfRange(receivedData, 30, 46));
+                    InetAddress ipAddress = InetAddress.getByAddress(knownNodes.get(name).getIP().getBytes());
+                    int port = knownNodes.get(name).getPort();
+
+                    DatagramPacket sendPacket = new DatagramPacket(receivedData, receivedData.length, ipAddress, port);
+                    socket.send(sendPacket);
 
 
                 } else if (msgType.equals("RTTr")) {
-                    sendPacket = new DatagramPacket();
-                    serverSocket.send(sendPacket);
 
+                    int timeReceived = (int) System.currentTimeMillis();
 
+                    int timeSent = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 46, 50)).getInt();
 
+                    int rtt = timeReceived - timeSent;
+
+                    rttSum += rtt;
+
+                    rttCount++;
+
+//                  if rtt is received from every node in knownNodes list minus itself
+                    if (rttCount == knownNodes.size() - 1) {
+
+//                      Send rttSum to all nodes
+                        for (String name : knownNodes.keySet()) {
+
+                            if (!name.equals(nodeName)) {
+
+                                MyNode node = knownNodes.get(name);
+
+                                InetAddress ipAddress = InetAddress.getByAddress(node.getIP().getBytes());
+
+                                byte[] message = prepareHeader(node, "RTTs");
+
+//                              Put rttSum in body of packet
+                                byte[] rttSumBytes = ByteBuffer.allocate(4).putInt(rttSum).array();
+                                int index = 46;
+                                for (int i = 0; i < rttSumBytes.length; i++) {
+                                    message[index++] = rttSumBytes[i];
+                                }
+
+                                DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, node.getPort());
+
+                                socket.send(sendPacket);
+                            }
+
+                        }
+
+                        rttCount = 0;
+                        rttSum = 0;
+                    }
+
+//              RTTs = RTT Sum Packet
+                } else if (msgType.equals("RTTs")) {
+
+                    String name = new String(Arrays.copyOfRange(receivedData, 30, 46));
+
+                    int sum = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 46, 50)).getInt();
+
+                    if(!name.equals(nodeName)) {
+                        rttSums.put(name, sum);
+                    }
 
                 } else if (msgType.equals("CM")) {
                     ByteArrayInputStream in = new ByteArrayInputStream(Arrays.copyOfRange(receivedData, 150, receivedData.length - 1));
@@ -81,10 +151,7 @@ public class ReceiveMultiThread implements Runnable {
                         e.printStackTrace();
                     }
 
-
-
-
-
+                    
 
                 } else if (msgType.equals("PC")) {
                     System.out.println(expressionStr);
@@ -105,17 +172,13 @@ public class ReceiveMultiThread implements Runnable {
 
 
 
-    public byte[] preparePacket(MyNode myNode, String msgtype) {
+    public byte[] prepareHeader(MyNode myNode, String msgtype) {
 
         byte[] packetType = msgtype.getBytes();
 
-        byte[] sourceIP = socket.getLocalAddress().getHostAddress().getBytes();
+        byte[] sourceName = nodeName.getBytes();
 
-        byte[] sourcePort = ByteBuffer.allocate(4).putInt(socket.getLocalPort()).array();
-
-        byte[] destIP = myNode.getIP().getBytes();
-
-        byte[] destPort = ByteBuffer.allocate(4).putInt(myNode.getPort()).array();
+        byte[] destName = myNode.getName().getBytes();
 
         byte[] message = new byte[64000];
 
@@ -126,49 +189,22 @@ public class ReceiveMultiThread implements Runnable {
             message[i] = packetType[i];
 
         }
-//      second 30 bytes
+//      next 16 bytes (starNode name is max 16 characters)
         int index = 30;
-        for(int i = 0; i < sourceIP.length; i++) {
+        for(int i = 0; i < sourceName.length; i++) {
 
-            message[index++] = sourceIP[i];
-
-        }
-
-//      third 30 bytes
-        int index = 60;
-        for(int i = 0; i < sourcePort.length; i++) {
-
-            message[index++] = sourcePort[i];
+            message[index++] = sourceName[i];
 
         }
 
-//      fourth 30 bytes
-        index = 90;
-        for(int i = 0; i < destIP.length; i++) {
+//      next 16 bytes (starNode name is max 16 characters)
+        index = 46;
+        for(int i = 0; i < destName.length; i++) {
 
-            message[index++] = destIP[i];
-
-        }
-
-//      fifth 30 bytes
-        index = 120;
-        for(int i = 0; i < destPort.length; i++) {
-
-            message[index++] = destPort[i];
+            message[index++] = destName[i];
 
         }
 
-        int timeSent = (int)System.currentTimeMillis();
-
-        byte[] timeSentBytes = ByteBuffer.allocate(4).putInt(timeSent).array();
-
-//      start of body
-        index = 150;
-        for (int i = 0; i < timeSentBytes.length; i++) {
-
-            message[index++] = timeSentBytes[i];
-
-        }
 
         return message;
     }
