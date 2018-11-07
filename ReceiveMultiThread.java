@@ -18,9 +18,6 @@ public class ReceiveMultiThread implements Runnable {
     private Map<String, Integer> rttSums;
     private ArrayList<String> eventLog;
 
-
-    private int rttSum = 0;
-
     private boolean notFull = true;
 
     public ReceiveMultiThread(String thisNode, DatagramSocket socket, Map<String, MyNode> knownNodes, MyNode hub,
@@ -104,30 +101,25 @@ public class ReceiveMultiThread implements Runnable {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": An RTT response has been received");
 
                     int timeReceived = (int) System.currentTimeMillis();
-
                     int timeSent = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 46, 50)).getInt();
-
                     int rtt = timeReceived - timeSent;
-
                     rttVector.put(thisNode, rtt);
-
-                    rttSum += rtt;
 
 //                  if rtt is received from every node in knownNodes list minus itself
                     if (rttVector.size() == knownNodes.size() - 1) {
 
-//                      put own rtt sum in rtt sum list
+//                      find rttSum of this node
+                        int rttSum = 0;
+                        for (String name : rttVector.keySet()) {
+                            rttSum += rttVector.get(name);
+                        }
                         rttSums.put(thisNode, rttSum);
 
 //                      Send rttSum to all nodes
                         for (String name : knownNodes.keySet()) {
-
                             if (!name.equals(thisNode)) {
-
                                 MyNode node = knownNodes.get(name);
-
                                 InetAddress ipAddress = InetAddress.getByAddress(node.getIP().getBytes());
-
                                 byte[] message = prepareHeader(node.getName(), "RTTs");
 
 //                              Put rttSum in body of packet
@@ -136,29 +128,24 @@ public class ReceiveMultiThread implements Runnable {
                                 for (int i = 0; i < rttSumBytes.length; i++) {
                                     message[index++] = rttSumBytes[i];
                                 }
-
                                 DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, node.getPort());
-
                                 socket.send(sendPacket);
                             }
-
                         }
-                        rttSum = 0;
                     }
 
 //              RTTs = RTT Sum Packet
                 } else if (msgType.equals("RTTs")) {
 
                     String name = new String(Arrays.copyOfRange(receivedData, 30, 46));
-
                     int sum = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 46, 50)).getInt();
 
                     if(!name.equals(thisNode)) {
                         rttSums.put(name, sum);
                     }
 
+//                  find hub if node has N rtt sums for the first time
                     if (rttSums.size() == knownNodes.size() && notFull) {
-
                         notFull = false;
 //                      find the node with the smallest rtt sum
                         int min = Integer.MAX_VALUE;
@@ -171,6 +158,7 @@ public class ReceiveMultiThread implements Runnable {
                         }
                         hub = minNode;
 
+//                  find new hub if there has been a change to rtt sum list
                     } else if (rttSums.size() == knownNodes.size() && rttSums.containsKey(name)) {
                         int min = Integer.MAX_VALUE;
                         MyNode minNode = null;
@@ -192,25 +180,18 @@ public class ReceiveMultiThread implements Runnable {
                     } catch (ClassNotFoundException e) {
                         e.printStackTrace();
                     }
-
-
-
                 } else if (msgType.equals("PC")) {
 
-//                  change PC to PCr
-                    receivedData[2] = 'r';
-
-
-//                  read star node name from messageBytes to get IP and port
+//                  read source star node name from messageBytes
                     String name = new String(Arrays.copyOfRange(receivedData, 30, 46));
                     byte[] message = prepareHeader(name, "PCr");
 
-                    InetAddress ipAddress = InetAddress.getByAddress(knownNodes.get(name).getIP().getBytes());
-                    int port = knownNodes.get(name).getPort();
+//                  read source star node name from messageBytes
+                    InetAddress ipAddress = InetAddress.getByAddress(Arrays.copyOfRange(receivedData, 62, 66));
+                    int port = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 66, 70)).getInt();
 
                     DatagramPacket sendPacket = new DatagramPacket(receivedData, receivedData.length, ipAddress, port);
                     socket.send(sendPacket);
-
 
                 } else if (msgType.equals("DH")) {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": The hub node has disconnected");
@@ -218,7 +199,6 @@ public class ReceiveMultiThread implements Runnable {
                     knownNodes.remove(nodeToDelete);
                     rttVector.remove(nodeToDelete);
                     rttSums.remove(nodeToDelete);
-
 
                     //recalculate RTT by sending RTTm msg to all knownNodes
                     for (String name : knownNodes.keySet()) {
@@ -244,48 +224,29 @@ public class ReceiveMultiThread implements Runnable {
         }
     }
 
-
-
-
-
-
-
-
-
-
     public byte[] prepareHeader(String destNode, String msgtype) {
 
         byte[] packetType = msgtype.getBytes();
-
         byte[] sourceName = thisNode.getBytes();
-
         byte[] destName = destNode.getBytes();
-
         byte[] message = new byte[64000];
-
 
 //      first 30 bytes
         for(int i = 0; i < packetType.length; i++) {
-
             message[i] = packetType[i];
-
         }
+
 //      next 16 bytes (starNode name is max 16 characters)
         int index = 30;
         for(int i = 0; i < sourceName.length; i++) {
-
             message[index++] = sourceName[i];
-
         }
 
 //      next 16 bytes (starNode name is max 16 characters)
         index = 46;
         for(int i = 0; i < destName.length; i++) {
-
             message[index++] = destName[i];
-
         }
-
 
         return message;
     }
