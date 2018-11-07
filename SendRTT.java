@@ -4,6 +4,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Map;
 
 public class SendRTT implements  Runnable{
@@ -11,12 +12,15 @@ public class SendRTT implements  Runnable{
     private String thisNode;
     private Map<String, MyNode> knownNodes;
     DatagramSocket socket;
+    private ArrayList<String> eventLog;
 
 
-    public SendRTT(String thisNode, DatagramSocket socket, Map<String, MyNode> knownNodes) {
+
+    public SendRTT(String thisNode, DatagramSocket socket, Map<String, MyNode> knownNodes, ArrayList<String> eventLog) {
         this.thisNode = thisNode;
         this.socket = socket;
         this.knownNodes = knownNodes;
+        this.eventLog = eventLog;
     }
 
     public void run() {

@@ -6,10 +6,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class ReceiveMultiThread implements Runnable {
 
@@ -17,19 +14,21 @@ public class ReceiveMultiThread implements Runnable {
     private Map<String, MyNode> knownNodes;
     private DatagramSocket socket;
     private MyNode hub;
-
     private Map<String, Integer> rttVector;
     private Map<String, Integer> rttSums;
+    private ArrayList<String> eventLog;
+
 
     private int rttSum = 0;
 
     public ReceiveMultiThread(String thisNode, DatagramSocket socket, Map<String, MyNode> knownNodes, MyNode hub,
-                              Map<String, Integer> rttVector) {
+                              Map<String, Integer> rttVector, ArrayList<String> eventLog) {
         this.thisNode = thisNode;
         this.socket = socket;
         this.knownNodes = knownNodes;
         this.hub = hub;
         this.rttVector = rttVector;
+        this.eventLog = eventLog;
     }
 
     public void run() {
@@ -54,9 +53,10 @@ public class ReceiveMultiThread implements Runnable {
 
                         //add unknown nodes to knownNodes map
                         int sizeBefore = knownNodes.size();
-                        for (String nameOfNodeToAppend: nodesToAppend.keyset()) {
+                        for (String nameOfNodeToAppend: nodesToAppend.keySet()) {
                             if (!nodesToAppend.containsKey(nameOfNodeToAppend)) {
                                 knownNodes.put(nameOfNodeToAppend, nodesToAppend.get(nameOfNodeToAppend));
+                                eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A new node has been discovered");
                             }
                         }
                         int sizeAfter = knownNodes.size();
@@ -84,6 +84,7 @@ public class ReceiveMultiThread implements Runnable {
 
 
                 } else if (msgType.equals("RTTm")) {
+                    eventLog.add(String.valueOf(System.currentTimeMillis()) + ": An RTT request has been received");
 
 //                  change RTTm to RTTr
                     receivedData[3] = 'r';
@@ -98,6 +99,7 @@ public class ReceiveMultiThread implements Runnable {
 
 
                 } else if (msgType.equals("RTTr")) {
+                    eventLog.add(String.valueOf(System.currentTimeMillis()) + ": An RTT response has been received");
 
                     int timeReceived = (int) System.currentTimeMillis();
 
@@ -151,6 +153,7 @@ public class ReceiveMultiThread implements Runnable {
                     }
 
                 } else if (msgType.equals("CM")) {
+                    eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A content message has been received");
                     ByteArrayInputStream in = new ByteArrayInputStream(Arrays.copyOfRange(receivedData, 150, receivedData.length - 1));
                     ObjectInputStream is = new ObjectInputStream(in);
                     try {
@@ -162,23 +165,26 @@ public class ReceiveMultiThread implements Runnable {
 
 
                 } else if (msgType.equals("PC")) {
-                    System.out.println(expressionStr);
+
                 } else if (msgType.equals("DH")) {
+                    eventLog.add(String.valueOf(System.currentTimeMillis()) + ": The hub node has disconnected");
                     String nodeToDelete = new String(Arrays.copyOfRange(receivedData, 30, 46));
                     knownNodes.remove(nodeToDelete);
                     rttVector.remove(nodeToDelete);
                     rttSums.remove(nodeToDelete);
 
+
                     //recalculate RTT by sending RTTm msg to all knownNodes
                     for (String name : knownNodes.keySet()) {
                         MyNode myNode = knownNodes.get(name);
                         InetAddress ipAddress = InetAddress.getByAddress(myNode.getIP().getBytes());
-                        byte[] message = preparePacket(myNode, 'RTTm');
+                        byte[] message = prepareHeader(myNode, "RTTm");
                         DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, myNode.getPort());
                         socket.send(sendPacket);
                     }
 
                 } else if (msgType.equals("DR")) {
+                    eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A non-hub node has disconnected");
                     //remove from knownNodes, rttVector, and rttSums
                     String nodeToDelete = new String(Arrays.copyOfRange(receivedData, 30, 46));
                     knownNodes.remove(nodeToDelete);

@@ -3,6 +3,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,6 +12,7 @@ public class StarNode{
     static Map<String, MyNode> knownNodes = new HashMap<String, MyNode>();
     static MyNode hub = null;
     static Map<String, Integer> rttVector = null;
+    static ArrayList<String> eventLog = null;
 
     public static void main(String[] args) {
 
@@ -38,16 +40,16 @@ public class StarNode{
             //POC Connect Thread
 
             //Receiving Messages Thread - Omega
-            Thread receiveThread = new Thread(new ReceiveMultiThread(nodeName, socket, knownNodes, hub, rttVector));
+            Thread receiveThread = new Thread(new ReceiveMultiThread(nodeName, socket, knownNodes, hub, rttVector, eventLog));
             receiveThread.start();
 
             //Calculating RTT Thread - Yizra
-            Thread sendRTT = new Thread(new SendRTT(nodeName, socket, knownNodes));
+            Thread sendRTT = new Thread(new SendRTT(nodeName, socket, knownNodes, eventLog));
             sendRTT.start();
 
             //Sending content Thread
 
-            Thread sendContent = new Thread(new SendContent(nodeName, socket, knownNodes, hub, rttVector));
+            Thread sendContent = new Thread(new SendContent(nodeName, socket, knownNodes, hub, rttVector, eventLog));
             sendContent.start();
 
 

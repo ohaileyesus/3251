@@ -3,6 +3,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -12,17 +13,19 @@ public class SendContent implements Runnable{
     private Map<String, MyNode> knownNodes;
     DatagramSocket socket;
     private MyNode hub;
-
     private Map<String, Integer> rttVector;
+    private ArrayList<String> eventLog;
+
 
 
     public SendContent(String thisNode, DatagramSocket socket, Map<String, MyNode> knownNodes, MyNode hub,
-                       Map<String, Integer> rttVector) {
+                       Map<String, Integer> rttVector, ArrayList<String> eventLog) {
         this.thisNode = thisNode;
         this.socket = socket;
         this.knownNodes = knownNodes;
         this.hub = hub;
         this.rttVector = rttVector;
+        this.eventLog = eventLog;
     }
 
     public void run() {
@@ -55,6 +58,7 @@ public class SendContent implements Runnable{
                     DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
 
                     socket.send(sendPacket);
+                    eventLog.add(String.valueOf(System.currentTimeMillis()) + ": Sent message");
 
                 } else if (request.contains("show-status")) {
 
@@ -68,7 +72,7 @@ public class SendContent implements Runnable{
 
                 } else if (request.contains("disconnect")) {
 
-                    if(hub.name.equals(thisNode.name)) {
+                    if(hub.getName().equals(thisNode)) {
                         //send Delete Hub msg
                         byte[] message = prepareHeader(thisNode, hub.getName(), "DH");
                         InetAddress ipAddress = InetAddress.getByAddress(hub.getIP().getBytes());
@@ -80,11 +84,13 @@ public class SendContent implements Runnable{
                         InetAddress ipAddress = InetAddress.getByAddress(hub.getIP().getBytes());
                         DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
                         socket.send(sendPacket);
-
                     }
+                    eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A node disconnected");
 
                 } else if (request.contains("show-log")) {
-
+                    for (String event: eventLog) {
+                        System.out.println(event);
+                    }
                 }
 
 
