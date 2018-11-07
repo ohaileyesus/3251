@@ -1,27 +1,61 @@
 import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
 public class StarNode{
-    public Map<String, MyNode> knownNodes = new HashMap<String, MyNode>();
-    MyNode hub;
-
-    MyNode currentNode = //new MyNode(....);
-    MyNode pocNode = //new MyNode(....);
-    knownNodes.add(currentNode, pocNode);
-
-    DatagramSocket serverSocket = new DatagramSocket(9999);
 
 
+    public static void main(String[] args) {
 
-    //POC Connect Thread
+        Map<String, MyNode> knownNodes = new HashMap<String, MyNode>();
+        MyNode hub = null;
 
-    //Receiving Messages Thread - Omega
-    Thread receiveThread = new Thread(new ReceiveMultiThread(socket, knownNodes));
-    receiveThread.start();
+        try {
 
-    //Calculating RTT Thread - Yizra
-    
-    //Sending content Thread
+            String nodeName = args[0];
+            String localIPAddress = InetAddress.getLocalHost().getHostAddress();
+            int localPort = Integer.parseInt(args[1]);
+
+            String pocIPAddress = InetAddress.getByName(args[2]).getHostAddress();
+            int pocPort = Integer.parseInt(args[3]);
+
+            int numberOfNodes = Integer.parseInt(args[4]);
+
+            MyNode currentNode = new MyNode(nodeName, localIPAddress, localPort);
+
+            knownNodes.put(nodeName, currentNode);
+
+            DatagramSocket socket = new DatagramSocket(localPort);
+
+
+            //POC Connect Thread
+
+            //Receiving Messages Thread - Omega
+            Thread receiveThread = new Thread(new ReceiveMultiThread(nodeName, socket, knownNodes));
+            receiveThread.start();
+
+            //Calculating RTT Thread - Yizra
+            Thread sendRTT = new Thread(new SendRTT(nodeName, socket, knownNodes));
+            sendRTT.start();
+
+            //Sending content Thread
+
+        } catch (UnknownHostException e) {
+            System.out.println(e.getMessage());
+            System.exit(0);
+        } catch (SocketException e) {
+            System.out.println(e.getMessage());
+            System.exit(0);
+        }
+
+
+
+
+    }
+
+
 
 }

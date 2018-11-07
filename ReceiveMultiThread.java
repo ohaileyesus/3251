@@ -12,7 +12,7 @@ import java.util.Set;
 
 public class ReceiveMultiThread implements Runnable {
 
-    private String nodeName;
+    private String thisNode;
     private Map<String, MyNode> knownNodes;
     private DatagramSocket socket;
 
@@ -21,8 +21,8 @@ public class ReceiveMultiThread implements Runnable {
     private int rttCount = 0;
     private int rttSum = 0;
 
-    public ReceiveMultiThread(String nodeName, DatagramSocket socket, Map<String, MyNode> knownNodes) {
-        this.nodeName = nodeName;
+    public ReceiveMultiThread(String thisNode, DatagramSocket socket, Map<String, MyNode> knownNodes) {
+        this.thisNode = thisNode;
         this.socket = socket;
         this.knownNodes = knownNodes;
     }
@@ -105,7 +105,7 @@ public class ReceiveMultiThread implements Runnable {
 //                      Send rttSum to all nodes
                         for (String name : knownNodes.keySet()) {
 
-                            if (!name.equals(nodeName)) {
+                            if (!name.equals(thisNode)) {
 
                                 MyNode node = knownNodes.get(name);
 
@@ -138,7 +138,7 @@ public class ReceiveMultiThread implements Runnable {
 
                     int sum = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 46, 50)).getInt();
 
-                    if(!name.equals(nodeName)) {
+                    if(!name.equals(thisNode)) {
                         rttSums.put(name, sum);
                     }
 
@@ -151,7 +151,7 @@ public class ReceiveMultiThread implements Runnable {
                         e.printStackTrace();
                     }
 
-                    
+
 
                 } else if (msgType.equals("PC")) {
                     System.out.println(expressionStr);
@@ -176,7 +176,7 @@ public class ReceiveMultiThread implements Runnable {
 
         byte[] packetType = msgtype.getBytes();
 
-        byte[] sourceName = nodeName.getBytes();
+        byte[] sourceName = thisNode.getBytes();
 
         byte[] destName = myNode.getName().getBytes();
 

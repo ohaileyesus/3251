@@ -8,13 +8,13 @@ import java.util.Map;
 
 public class SendRTT implements  Runnable{
 
-    private String nodeName;
+    private String thisNode;
     private Map<String, MyNode> knownNodes;
     DatagramSocket socket;
 
 
-    public SendRTT(String nodeName, DatagramSocket socket, Map<String, MyNode> knownNodes) {
-        this.nodeName = nodeName;
+    public SendRTT(String thisNode, DatagramSocket socket, Map<String, MyNode> knownNodes) {
+        this.thisNode = thisNode;
         this.socket = socket;
         this.knownNodes = knownNodes;
     }
@@ -64,7 +64,7 @@ public class SendRTT implements  Runnable{
 
         byte[] packetType = "RTTm".getBytes();
 
-        byte[] sourceName = nodeName.getBytes();
+        byte[] sourceName = thisNode.getBytes();
 
         byte[] destName = myNode.getName().getBytes();
 
