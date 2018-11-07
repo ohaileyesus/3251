@@ -164,6 +164,27 @@ public class ReceiveMultiThread implements Runnable {
 
                 } else if (msgType.equals("PC")) {
                     System.out.println(expressionStr);
+                } else if (msgType.equals("DH")) {
+                    String nodeToDelete = new String(Arrays.copyOfRange(receivedData, 30, 46));
+                    knownNodes.remove(nodeToDelete);
+                    rttVector.remove(nodeToDelete);
+                    rttSums.remove(nodeToDelete);
+
+                    //recalculate RTT by sending RTTm msg to all knownNodes
+                    for (String name : knownNodes.keySet()) {
+                        MyNode myNode = knownNodes.get(name);
+                        InetAddress ipAddress = InetAddress.getByAddress(myNode.getIP().getBytes());
+                        byte[] message = preparePacket(myNode, 'RTTm');
+                        DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, myNode.getPort());
+                        socket.send(sendPacket);
+                    }
+
+                } else if (msgType.equals("DR")) {
+                    //remove from knownNodes, rttVector, and rttSums
+                    String nodeToDelete = new String(Arrays.copyOfRange(receivedData, 30, 46));
+                    knownNodes.remove(nodeToDelete);
+                    rttVector.remove(nodeToDelete);
+                    rttSums.remove(nodeToDelete);
                 }
             }
 

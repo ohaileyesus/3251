@@ -58,9 +58,32 @@ public class SendContent implements Runnable{
 
                 } else if (request.contains("show-status")) {
 
-                } else if (request.contains("show-log")) {
+                    System.out.println("Active Nodes in the network: ");
+
+                    for (String nodeName: rttVector.keySet()) {
+                        System.out.println(nodeName + " is " + rttVector.get(nodeName) + " seconds away");
+                    }
+                    System.out.println("\n" + hub.getName() + " is the hub.");
+
 
                 } else if (request.contains("disconnect")) {
+
+                    if(hub.name.equals(thisNode.name)) {
+                        //send Delete Hub msg
+                        byte[] message = prepareHeader(thisNode, hub.getName(), "DH");
+                        InetAddress ipAddress = InetAddress.getByAddress(hub.getIP().getBytes());
+                        DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
+                        socket.send(sendPacket);
+                    } else {
+                        //send Delete Regular msg
+                        byte[] message = prepareHeader(thisNode, hub.getName(), "DR");
+                        InetAddress ipAddress = InetAddress.getByAddress(hub.getIP().getBytes());
+                        DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
+                        socket.send(sendPacket);
+
+                    }
+
+                } else if (request.contains("show-log")) {
 
                 }
 
