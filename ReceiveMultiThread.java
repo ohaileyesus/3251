@@ -51,9 +51,15 @@ public class ReceiveMultiThread implements Runnable {
                     ByteArrayInputStream in = new ByteArrayInputStream(Arrays.copyOfRange(receivedData, 62, receivedData.length));
                     ObjectInputStream is = new ObjectInputStream(in);
                     try {
-                        Set<MyNode> nodesToAppend = (Set<MyNode>) is.readObject();
+                        Map<String, MyNode> nodesToAppend = (Map<String, MyNode>) is.readObject();
+
+                        //add unknown nodes to knownNodes map
                         int sizeBefore = knownNodes.size();
-                        knownNodes.add(nodesToAppend);
+                        for (String nameOfNodeToAppend: nodesToAppend.keyset()) {
+                            if (!nodesToAppend.containsKey(nameOfNodeToAppend)) {
+                                knownNodes.put(nameOfNodeToAppend, nodesToAppend.get(nameOfNodeToAppend))
+                            }
+                        }
                         int sizeAfter = knownNodes.size();
 
                         //if knownNodes was already up to date, no need to continue
