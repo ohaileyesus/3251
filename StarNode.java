@@ -1,8 +1,10 @@
 import java.io.IOException;
-import java.net.*;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Scanner;
 
 public class StarNode{
 
@@ -45,45 +47,9 @@ public class StarNode{
 
             //Sending content Thread
 
+            Thread sendContent = new Thread(new SendContent(nodeName, socket, knownNodes, hub, rttVector));
+            sendContent.start();
 
-            while(true) {
-
-
-                System.out.println("enter command");
-
-                Scanner scanner = new Scanner(System.in);
-
-                String request = scanner.nextLine();
-
-                if (request.contains("send")) {
-
-                    byte[] message = prepareHeader(nodeName, hub.getName(), "CM");
-
-//                  Put text in body of packet
-                    byte[] text = request.substring(5, request.length()).getBytes();
-                    int index = 46;
-                    for (int i = 0; i < text.length; i++) {
-                        message[index++] = text[i];
-                    }
-
-                    InetAddress ipAddress = InetAddress.getByAddress(hub.getIP().getBytes());
-
-                    DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
-
-                    socket.send(sendPacket);
-
-                } else if (request.contains("show-status")) {
-
-                } else if (request.contains("show-log")) {
-
-                } else if (request.contains("disconnect")) {
-
-                }
-
-
-
-
-            }
 
         } catch (UnknownHostException e) {
             System.out.println(e.getMessage());
