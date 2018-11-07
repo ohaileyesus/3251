@@ -46,7 +46,6 @@ public class ReceiveMultiThread implements Runnable {
                 String msgType = new String(Arrays.copyOfRange(receivedData, 0, 30));
 
                 if (msgType.equals("PD")) {
-
                     //read knownNodes list from object input stream
                     ByteArrayInputStream in = new ByteArrayInputStream(Arrays.copyOfRange(receivedData, 62, receivedData.length));
                     ObjectInputStream is = new ObjectInputStream(in);
@@ -57,7 +56,7 @@ public class ReceiveMultiThread implements Runnable {
                         int sizeBefore = knownNodes.size();
                         for (String nameOfNodeToAppend: nodesToAppend.keyset()) {
                             if (!nodesToAppend.containsKey(nameOfNodeToAppend)) {
-                                knownNodes.put(nameOfNodeToAppend, nodesToAppend.get(nameOfNodeToAppend))
+                                knownNodes.put(nameOfNodeToAppend, nodesToAppend.get(nameOfNodeToAppend));
                             }
                         }
                         int sizeAfter = knownNodes.size();
