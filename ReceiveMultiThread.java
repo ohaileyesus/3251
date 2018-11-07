@@ -21,6 +21,8 @@ public class ReceiveMultiThread implements Runnable {
 
     private int rttSum = 0;
 
+    private boolean notFull = true;
+
     public ReceiveMultiThread(String thisNode, DatagramSocket socket, Map<String, MyNode> knownNodes, MyNode hub,
                               Map<String, Integer> rttVector, ArrayList<String> eventLog) {
         this.thisNode = thisNode;
@@ -76,7 +78,7 @@ public class ReceiveMultiThread implements Runnable {
                     //update every node with new knownNodes set
                     for (String name : knownNodes.keySet()) {
                         MyNode neighbor = knownNodes.get(name);
-                        byte[] dataToSend = prepareHeader(neighbor, "PD");
+                        byte[] dataToSend = prepareHeader(neighbor.getName(), "PD");
                         InetAddress ipAddress = InetAddress.getByAddress(neighbor.getIP().getBytes());
                         DatagramPacket sendPacket = new DatagramPacket(dataToSend, dataToSend.length, ipAddress, neighbor.getPort());
                         socket.send(sendPacket);
@@ -114,6 +116,9 @@ public class ReceiveMultiThread implements Runnable {
 //                  if rtt is received from every node in knownNodes list minus itself
                     if (rttVector.size() == knownNodes.size() - 1) {
 
+//                      put own rtt sum in rtt sum list
+                        rttSums.put(thisNode, rttSum);
+
 //                      Send rttSum to all nodes
                         for (String name : knownNodes.keySet()) {
 
@@ -123,7 +128,7 @@ public class ReceiveMultiThread implements Runnable {
 
                                 InetAddress ipAddress = InetAddress.getByAddress(node.getIP().getBytes());
 
-                                byte[] message = prepareHeader(node, "RTTs");
+                                byte[] message = prepareHeader(node.getName(), "RTTs");
 
 //                              Put rttSum in body of packet
                                 byte[] rttSumBytes = ByteBuffer.allocate(4).putInt(rttSum).array();
@@ -152,6 +157,32 @@ public class ReceiveMultiThread implements Runnable {
                         rttSums.put(name, sum);
                     }
 
+                    if (rttSums.size() == knownNodes.size() && notFull) {
+
+                        notFull = false;
+//                      find the node with the smallest rtt sum
+                        int min = Integer.MAX_VALUE;
+                        MyNode minNode = null;
+                        for (String nodeName : knownNodes.keySet()) {
+                            if (rttSums.get(nodeName) < min) {
+                                min = rttSums.get(nodeName);
+                                minNode = knownNodes.get(nodeName);
+                            }
+                        }
+                        hub = minNode;
+
+                    } else if (rttSums.size() == knownNodes.size() && rttSums.containsKey(name)) {
+                        int min = Integer.MAX_VALUE;
+                        MyNode minNode = null;
+                        for (String nodeName : knownNodes.keySet()) {
+                            if (rttSums.get(nodeName) < min) {
+                                min = rttSums.get(nodeName);
+                                minNode = knownNodes.get(nodeName);
+                            }
+                        }
+                        hub = minNode;
+                    }
+
                 } else if (msgType.equals("CM")) {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A content message has been received");
                     ByteArrayInputStream in = new ByteArrayInputStream(Arrays.copyOfRange(receivedData, 150, receivedData.length - 1));
@@ -166,6 +197,21 @@ public class ReceiveMultiThread implements Runnable {
 
                 } else if (msgType.equals("PC")) {
 
+//                  change PC to PCr
+                    receivedData[2] = 'r';
+
+
+//                  read star node name from messageBytes to get IP and port
+                    String name = new String(Arrays.copyOfRange(receivedData, 30, 46));
+                    byte[] message = prepareHeader(name, "PCr");
+
+                    InetAddress ipAddress = InetAddress.getByAddress(knownNodes.get(name).getIP().getBytes());
+                    int port = knownNodes.get(name).getPort();
+
+                    DatagramPacket sendPacket = new DatagramPacket(receivedData, receivedData.length, ipAddress, port);
+                    socket.send(sendPacket);
+
+
                 } else if (msgType.equals("DH")) {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": The hub node has disconnected");
                     String nodeToDelete = new String(Arrays.copyOfRange(receivedData, 30, 46));
@@ -178,7 +224,7 @@ public class ReceiveMultiThread implements Runnable {
                     for (String name : knownNodes.keySet()) {
                         MyNode myNode = knownNodes.get(name);
                         InetAddress ipAddress = InetAddress.getByAddress(myNode.getIP().getBytes());
-                        byte[] message = prepareHeader(myNode, "RTTm");
+                        byte[] message = prepareHeader(myNode.getName(), "RTTm");
                         DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, myNode.getPort());
                         socket.send(sendPacket);
                     }
@@ -207,13 +253,13 @@ public class ReceiveMultiThread implements Runnable {
 
 
 
-    public byte[] prepareHeader(MyNode myNode, String msgtype) {
+    public byte[] prepareHeader(String destNode, String msgtype) {
 
         byte[] packetType = msgtype.getBytes();
 
         byte[] sourceName = thisNode.getBytes();
 
-        byte[] destName = myNode.getName().getBytes();
+        byte[] destName = destNode.getBytes();
 
         byte[] message = new byte[64000];
 

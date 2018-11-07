@@ -4,6 +4,9 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.net.*;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,6 +42,12 @@ public class StarNode{
 
             //POC Connect Thread
 
+            connectToPOC(currentNode, pocIPAddress, pocPort, socket);
+
+
+
+
+
             //Receiving Messages Thread - Omega
             Thread receiveThread = new Thread(new ReceiveMultiThread(nodeName, socket, knownNodes, hub, rttVector, eventLog));
             receiveThread.start();
@@ -65,6 +74,68 @@ public class StarNode{
         }
 
 
+
+
+    }
+
+    public static void connectToPOC(MyNode thisNode, String pocIP, int pocPort, DatagramSocket socket) {
+
+        try {
+
+            while (true) {
+
+
+                InetAddress ipAddress = InetAddress.getByAddress(pocIP.getBytes());
+
+                byte[] message = prepareHeader(thisNode.getName(), "no name", "PC");
+
+//              Put source IP and Port in body
+                byte[] sourceIP = thisNode.getIP().getBytes();
+                int index = 62;
+                for (int i = 0; i < sourceIP.length; i++) {
+
+                    message[index++] = sourceIP[i];
+
+                }
+                byte[] sourcePort = ByteBuffer.allocate(4).putInt(thisNode.getPort()).array();
+                for (int i = 0; i < sourcePort.length; i++) {
+
+                    message[index++] = sourcePort[i];
+                }
+
+                DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, pocPort);
+
+                socket.send(sendPacket);
+
+                socket.setSoTimeout(5000);
+
+                byte[] response = new byte[64000];
+                DatagramPacket receivePacket = new DatagramPacket(response, response.length);
+
+                String msgType = null;
+
+
+
+                try {
+                    socket.receive(receivePacket);
+                    byte[] receivedData = receivePacket.getData();
+                    msgType = new String(Arrays.copyOfRange(receivedData, 0, 30));
+                    if (msgType.equals("PCr")) {
+                        break;
+                    }
+                } catch (SocketTimeoutException e) {
+
+                }
+
+            }
+
+        } catch (UnknownHostException e) {
+            System.out.println(e.getMessage());
+            System.exit(0);
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+            System.exit(0);
+        }
 
 
     }
