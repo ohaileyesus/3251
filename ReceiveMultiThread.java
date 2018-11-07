@@ -7,6 +7,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -15,16 +16,20 @@ public class ReceiveMultiThread implements Runnable {
     private String thisNode;
     private Map<String, MyNode> knownNodes;
     private DatagramSocket socket;
+    private MyNode hub;
 
+    private Map<String, Integer> rttVector;
     private Map<String, Integer> rttSums;
 
-    private int rttCount = 0;
     private int rttSum = 0;
 
-    public ReceiveMultiThread(String thisNode, DatagramSocket socket, Map<String, MyNode> knownNodes) {
+    public ReceiveMultiThread(String thisNode, DatagramSocket socket, Map<String, MyNode> knownNodes, MyNode hub,
+                              Map<String, Integer> rttVector) {
         this.thisNode = thisNode;
         this.socket = socket;
         this.knownNodes = knownNodes;
+        this.hub = hub;
+        this.rttVector = rttVector;
     }
 
     public void run() {
@@ -95,12 +100,12 @@ public class ReceiveMultiThread implements Runnable {
 
                     int rtt = timeReceived - timeSent;
 
+                    rttVector.put(thisNode, rtt);
+
                     rttSum += rtt;
 
-                    rttCount++;
-
 //                  if rtt is received from every node in knownNodes list minus itself
-                    if (rttCount == knownNodes.size() - 1) {
+                    if (rttVector.size() == knownNodes.size() - 1) {
 
 //                      Send rttSum to all nodes
                         for (String name : knownNodes.keySet()) {
@@ -126,8 +131,6 @@ public class ReceiveMultiThread implements Runnable {
                             }
 
                         }
-
-                        rttCount = 0;
                         rttSum = 0;
                     }
 
