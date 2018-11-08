@@ -71,7 +71,14 @@ public class StarNode{
                 message[index++] = sourcePort[i];
             }
 
-            InetAddress ipAddress = InetAddress.getByAddress(pocIP.getBytes());
+            String[] ip = pocIP.split("\\.");
+            byte[] ipAsByteArr = new byte[4];
+            int temp;
+            for (int i = 0; i < 4; i++) {
+                temp = Integer.parseInt(ip[3 - i]);
+                ipAsByteArr[i] = (byte) temp;
+            }
+            InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
             DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, pocPort);
             socket.setSoTimeout(5000);
             byte[] response = new byte[64000];
