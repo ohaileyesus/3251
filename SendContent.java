@@ -57,9 +57,7 @@ public class SendContent implements Runnable{
                         DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
                         socket.send(sendPacket);
                     }
-
-
-                    // if file message
+                    //if file message
                     else {
                         //convert file into byte array
                         String filename = request.substring(5, request.length());
@@ -72,13 +70,22 @@ public class SendContent implements Runnable{
                             fileInputStream.read(fileAsByteArr);
                             byte[] message = prepareHeader(thisNode, hub.getName(), "CMF");
 
-                            //format of packet = 62 bytes header + 1 byte filename length + filename + file
+                            //format of packet = 62 bytes header + 1 byte filename length + filename + 1 byte file length + file
+
+                            //1 byte filename length
                             message[62] = (byte) filename.length();
+
+                            //filename
                             int index = 63;
                             for (int i = 0; i < filename.length(); i++) {
                                 message[index++] = (byte) filename.charAt(i);
                             }
 
+                            //1 byte file length
+                            message[index + filename.length()] = (byte) file.length();
+
+                            //file
+                            index = index + filename.length() + 1;
                             for (int i = 0; i < fileAsByteArr.length; i++) {
                                 message[index++] = fileAsByteArr[i];
                             }
