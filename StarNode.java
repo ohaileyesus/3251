@@ -1,11 +1,7 @@
 import java.io.IOException;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.net.*;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -17,7 +13,7 @@ public class StarNode{
     static Map<String, Integer> rttVector = null;
     static ArrayList<String> eventLog = null;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception{
 
         try {
 //          read in command line arguments
@@ -58,11 +54,9 @@ public class StarNode{
         }
     }
 
-    public static void connectToPOC(MyNode thisNode, String pocIP, int pocPort, DatagramSocket socket) {
+    public static void connectToPOC(MyNode thisNode, String pocIP, int pocPort, DatagramSocket socket) throws Exception{
 
         try {
-
-            InetAddress ipAddress = InetAddress.getByAddress(pocIP.getBytes());
 
             byte[] message = prepareHeader(thisNode.getName(), "no name", "PC");
 
@@ -77,14 +71,21 @@ public class StarNode{
                 message[index++] = sourcePort[i];
             }
 
+            InetAddress ipAddress = InetAddress.getByAddress(pocIP.getBytes());
             DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, pocPort);
             socket.setSoTimeout(5000);
             byte[] response = new byte[64000];
             DatagramPacket receivePacket = new DatagramPacket(response, response.length);
 
+
 //          keep sending every 5 seconds until PCr packet received
+            int sendAttempts = 0;
             while (true) {
 
+//              there are 24 "5-sec periods" in 2 minutes, so quit at 25th send attempt
+                if (sendAttempts == 25) {
+                    throw new Exception("POC did not come alive in time");
+                }
                 socket.send(sendPacket);
 
                 try {
@@ -92,12 +93,16 @@ public class StarNode{
                     byte[] receivedData = receivePacket.getData();
                     String msgType = new String(Arrays.copyOfRange(receivedData, 0, 30));
                     if (msgType.equals("PCr")) {
+//                      Add pocNode to knownNodes map
+                        String name = new String(Arrays.copyOfRange(receivedData, 30, 46));
+                        MyNode pocNode = new MyNode(name, pocIP, pocPort);
+                        knownNodes.put(name, pocNode);
                         break;
                     }
                 } catch (SocketTimeoutException e) {
 
                 }
-
+                sendAttempts++;
             }
 
         } catch (UnknownHostException e) {
