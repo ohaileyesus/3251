@@ -32,32 +32,39 @@ public class SendContent implements Runnable{
 
 
         try {
-
             while(true) {
-
-
                 System.out.println("enter command");
-
                 Scanner scanner = new Scanner(System.in);
-
                 String request = scanner.nextLine();
-
                 if (request.contains("send")) {
 
-                    byte[] message = prepareHeader(thisNode, hub.getName(), "CM");
 
-//                  Put text in body of packet
-                    byte[] text = request.substring(5, request.length()).getBytes();
-                    int index = 46;
-                    for (int i = 0; i < text.length; i++) {
-                        message[index++] = text[i];
+
+                    //if ASCII message
+                    if (request.contains("\"")) {
+                        byte[] message = prepareHeader(thisNode, hub.getName(), "CMA");
+
+                        //Put text in body of packet
+                        byte[] text = request.substring(5, request.length()).getBytes();
+                        //format of packet = 62 header bytes + 1 byte for text length + the body of the text
+                        message[62] = (byte) text.length;
+                        int index = 63;
+                        for (int i = 0; i < text.length; i++) {
+                            message[index++] = text[i];
+                        }
+                        InetAddress ipAddress = InetAddress.getByAddress(hub.getIP().getBytes());
+                        DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
+                        socket.send(sendPacket);
                     }
 
-                    InetAddress ipAddress = InetAddress.getByAddress(hub.getIP().getBytes());
 
-                    DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
 
-                    socket.send(sendPacket);
+
+                    // if file message
+                    else {
+                        //package file into stream and send via datagram
+                    }
+
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": Sent message");
 
                 } else if (request.contains("show-status")) {

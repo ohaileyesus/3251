@@ -1,7 +1,4 @@
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -171,15 +168,39 @@ public class ReceiveMultiThread implements Runnable {
                         hub = minNode;
                     }
 
-                } else if (msgType.equals("CM")) {
-                    eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A content message has been received");
-                    ByteArrayInputStream in = new ByteArrayInputStream(Arrays.copyOfRange(receivedData, 150, receivedData.length - 1));
-                    ObjectInputStream is = new ObjectInputStream(in);
-                    try {
-                        System.out.println(is.readObject());
-                    } catch (ClassNotFoundException e) {
-                        e.printStackTrace();
-                    }
+                } else if (msgType.equals("CMF")) {
+                    eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A file has been received");
+//
+//                    int filePathLength = receivedData[62];
+//                    String filePath = new String(Arrays.copyOfRange(receivedData, 63, 63 + filePathLength));
+//
+//                    //ByteArrayInputStream in = new ByteArrayInputStream(Arrays.copyOfRange(receivedData, 150, receivedData.length - 1));
+//                    //ObjectInputStream is = new ObjectInputStream(in);
+//                    try {
+//                        //int indexOfFile = 63 + filePathLength;
+//                        File file = new File(filePath);
+//                        FileInputStream fis = new FileInputStream(file);
+//                        byte[] fsize = new byte[(int) file.length()];
+//                        InetAddress addr = InetAddress.getByName("localhost");
+//                        receivePacket=new DatagramPacket(DataLine.getBytes(), DataLine.length());
+//                        DatagramSocket socket = new DatagramSocket();
+//                        socket.send(receivePacket);
+//
+//
+//                    } catch (ClassNotFoundException e) {
+//                        e.printStackTrace();
+//                    }
+//
+
+                } else if (msgType.equals("CMA")) {
+                    eventLog.add(String.valueOf(System.currentTimeMillis()) + ": An ASCII message has been received");
+
+                    String senderName = new String(Arrays.copyOfRange(receivedData, 30, 46));
+                    int bodyLength = receivedData[62];
+                    String asciiMessageBody = new String(Arrays.copyOfRange(receivedData, 63, 63 + bodyLength));
+
+                    System.out.println("Node " + senderName + " says: " + asciiMessageBody);
+
                 } else if (msgType.equals("PC")) {
 
 //                  read source star node name from messageBytes
