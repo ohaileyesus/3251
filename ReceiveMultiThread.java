@@ -173,9 +173,11 @@ public class ReceiveMultiThread implements Runnable {
 
                     String senderName = new String(Arrays.copyOfRange(receivedData, 30, 46));
                     int fileNameLength = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 62, 63)).getInt();
-                    int startOfContent = 63 + fileNameLength;
-                    String fileName = new String(Arrays.copyOfRange(receivedData, 63, startOfContent));
-                    byte[] fileContent = Arrays.copyOfRange(receivedData, startOfContent, 6400 + 1);
+                    int fileContentLength = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 63, 64)).getInt();
+                    int startOfContent = 64 + fileNameLength;
+                    String fileName = new String(Arrays.copyOfRange(receivedData, 64, startOfContent));
+                    int endOfContent = startOfContent + fileContentLength;
+                    byte[] fileContent = Arrays.copyOfRange(receivedData, startOfContent, endOfContent);
                     File targetFile = new File("/" + fileName);
                     OutputStream outStream = new FileOutputStream(targetFile);
                     outStream.write(fileContent);
