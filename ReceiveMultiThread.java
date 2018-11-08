@@ -170,27 +170,29 @@ public class ReceiveMultiThread implements Runnable {
 
                 } else if (msgType.equals("CMF")) {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A file has been received");
-//
-//                    int filePathLength = receivedData[62];
-//                    String filePath = new String(Arrays.copyOfRange(receivedData, 63, 63 + filePathLength));
-//
-//                    //ByteArrayInputStream in = new ByteArrayInputStream(Arrays.copyOfRange(receivedData, 150, receivedData.length - 1));
-//                    //ObjectInputStream is = new ObjectInputStream(in);
-//                    try {
-//                        //int indexOfFile = 63 + filePathLength;
-//                        File file = new File(filePath);
-//                        FileInputStream fis = new FileInputStream(file);
-//                        byte[] fsize = new byte[(int) file.length()];
-//                        InetAddress addr = InetAddress.getByName("localhost");
-//                        receivePacket=new DatagramPacket(DataLine.getBytes(), DataLine.length());
-//                        DatagramSocket socket = new DatagramSocket();
-//                        socket.send(receivePacket);
-//
-//
-//                    } catch (ClassNotFoundException e) {
-//                        e.printStackTrace();
-//                    }
-//
+
+                    String senderName = new String(Arrays.copyOfRange(receivedData, 30, 46));
+                    int fileNameLength = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 62, 63)).getInt();
+                    int startOfContent = 63 + fileNameLength;
+                    String fileName = new String(Arrays.copyOfRange(receivedData, 63, startOfContent));
+                    byte[] fileContent = Arrays.copyOfRange(receivedData, startOfContent, 6400 + 1);
+                    File targetFile = new File("/" + fileName);
+                    OutputStream outStream = new FileOutputStream(targetFile);
+                    outStream.write(fileContent);
+                    System.out.println(fileName + " file received from " + senderName);
+
+
+                    //if hub, forwards message to all other nodes except sender and hub itself
+                    if (thisNode.equals(hub.getName())){
+                        for (String neighborName: knownNodes.keySet()) {
+                            if (!neighborName.equals(hub.getName()) && !neighborName.equals(senderName)) {
+                                MyNode neighbor = knownNodes.get(neighborName);
+                                InetAddress ipAddress = InetAddress.getByName(neighbor.getIP());
+                                DatagramPacket sendPacket = new DatagramPacket(receivedData, receivedData.length, ipAddress, neighbor.getPort());
+                                socket.send(sendPacket);
+                            }
+                        }
+                    }
 
                 } else if (msgType.equals("CMA")) {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": An ASCII message has been received");
