@@ -79,6 +79,7 @@ public class ConnectToPOC implements Runnable{
                         String name = new String(Arrays.copyOfRange(receivedData, 30, 46));
                         MyNode pocNode = new MyNode(name, pocIP, pocPort);
                         knownNodes.put(name, pocNode);
+                        System.out.println("poc connected");
                         break;
                     }
                 } catch (SocketTimeoutException e) {
