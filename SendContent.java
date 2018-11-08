@@ -1,3 +1,6 @@
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -38,8 +41,6 @@ public class SendContent implements Runnable{
                 String request = scanner.nextLine();
                 if (request.contains("send")) {
 
-
-
                     //if ASCII message
                     if (request.contains("\"")) {
                         byte[] message = prepareHeader(thisNode, hub.getName(), "CMA");
@@ -58,11 +59,42 @@ public class SendContent implements Runnable{
                     }
 
 
-
-
                     // if file message
                     else {
-                        //package file into stream and send via datagram
+                        //convert file into byte array
+                        String filename = request.substring(5, request.length());
+                        File file = new File(filename);
+                        byte[] fileAsByteArr = new byte[(int) file.length()];
+
+                        try {
+                            //put file into fileinputstream
+                            FileInputStream fileInputStream = new FileInputStream(file);
+                            fileInputStream.read(fileAsByteArr);
+                            byte[] message = prepareHeader(thisNode, hub.getName(), "CMF");
+
+                            //format of packet = 62 bytes header + 1 byte filename length + filename + file
+                            message[62] = (byte) filename.length();
+                            int index = 63;
+                            for (int i = 0; i < filename.length(); i++) {
+                                message[index++] = (byte) filename.charAt(i);
+                            }
+
+                            for (int i = 0; i < fileAsByteArr.length; i++) {
+                                message[index++] = fileAsByteArr[i];
+                            }
+
+                            InetAddress ipAddress = InetAddress.getByAddress(hub.getIP().getBytes());
+                            DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
+                            socket.send(sendPacket);
+
+                        } catch (FileNotFoundException e) {
+                            System.out.println("File Not Found.");
+                            e.printStackTrace();
+                        }
+                        catch (IOException e1) {
+                            System.out.println("Error Reading The File.");
+                            e1.printStackTrace();
+                        }
                     }
 
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": Sent message");
@@ -76,9 +108,7 @@ public class SendContent implements Runnable{
                     }
                     System.out.println("\n" + hub.getName() + " is the hub.");
 
-
                 } else if (request.contains("disconnect")) {
-
                     if(hub.getName().equals(thisNode)) {
                         //send Delete Hub msg
                         byte[] message = prepareHeader(thisNode, hub.getName(), "DH");
@@ -99,10 +129,6 @@ public class SendContent implements Runnable{
                         System.out.println(event);
                     }
                 }
-
-
-
-
             }
 
         } catch (UnknownHostException e) {
