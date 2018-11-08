@@ -1,8 +1,8 @@
-import java.io.IOException;
-import java.net.*;
-import java.nio.ByteBuffer;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,7 +31,8 @@ public class StarNode{
             DatagramSocket socket = new DatagramSocket(localPort);
 
             //POC Connect Thread
-            connectToPOC(currentNode, pocIPAddress, pocPort, socket);
+            Thread pocConnect = new Thread(new ConnectToPOC(currentNode, knownNodes, pocIPAddress, pocPort, socket));
+            pocConnect.start();
 
             //Receiving Messages Thread - Omega
             Thread receiveThread = new Thread(new ReceiveMultiThread(nodeName, socket, knownNodes, hub, rttVector, eventLog));
@@ -54,72 +55,6 @@ public class StarNode{
         }
     }
 
-    public static void connectToPOC(MyNode thisNode, String pocIP, int pocPort, DatagramSocket socket) throws Exception{
-
-        try {
-
-            byte[] message = prepareHeader(thisNode.getName(), "no name", "PC");
-
-//          Put source IP and Port in body
-            byte[] sourceIP = thisNode.getIP().getBytes();
-            int index = 62;
-            for (int i = 0; i < sourceIP.length; i++) {
-                message[index++] = sourceIP[i];
-            }
-            byte[] sourcePort = ByteBuffer.allocate(4).putInt(thisNode.getPort()).array();
-            for (int i = 0; i < sourcePort.length; i++) {
-                message[index++] = sourcePort[i];
-            }
-
-            String[] ip = pocIP.split("\\.");
-            byte[] ipAsByteArr = new byte[4];
-            int temp;
-            for (int i = 0; i < 4; i++) {
-                temp = Integer.parseInt(ip[3 - i]);
-                ipAsByteArr[i] = (byte) temp;
-            }
-            InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
-            DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, pocPort);
-            socket.setSoTimeout(5000);
-            byte[] response = new byte[64000];
-            DatagramPacket receivePacket = new DatagramPacket(response, response.length);
-
-
-//          keep sending every 5 seconds until PCr packet received
-            int sendAttempts = 0;
-            while (true) {
-
-//              there are 24 "5-sec periods" in 2 minutes, so quit at 25th send attempt
-                if (sendAttempts == 25) {
-                    throw new Exception("POC did not come alive in time");
-                }
-                socket.send(sendPacket);
-
-                try {
-                    socket.receive(receivePacket);
-                    byte[] receivedData = receivePacket.getData();
-                    String msgType = new String(Arrays.copyOfRange(receivedData, 0, 30));
-                    if (msgType.equals("PCr")) {
-//                      Add pocNode to knownNodes map
-                        String name = new String(Arrays.copyOfRange(receivedData, 30, 46));
-                        MyNode pocNode = new MyNode(name, pocIP, pocPort);
-                        knownNodes.put(name, pocNode);
-                        break;
-                    }
-                } catch (SocketTimeoutException e) {
-
-                }
-                sendAttempts++;
-            }
-
-        } catch (UnknownHostException e) {
-            System.out.println(e.getMessage());
-            System.exit(0);
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
-            System.exit(0);
-        }
-    }
 
     public static byte[] prepareHeader(String thisNode, String destNode, String msgtype) {
 
