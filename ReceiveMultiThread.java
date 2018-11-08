@@ -202,12 +202,15 @@ public class ReceiveMultiThread implements Runnable {
 
                     System.out.println("Node " + senderName + " says: " + asciiMessageBody);
 
+                    //if hub, forwards message to all other nodes except sender and hub itself
                     if (thisNode.equals(hub.getName())){
                         for (String neighborName: knownNodes.keySet()) {
-                            MyNode neighbor = knownNodes.get(neighborName);
-                            InetAddress ipAddress = InetAddress.getByName(neighbor.getIP());
-                            DatagramPacket sendPacket = new DatagramPacket(receivedData, receivedData.length, ipAddress, neighbor.getPort());
-                            socket.send(sendPacket);
+                            if (!neighborName.equals(hub.getName()) && !neighborName.equals(senderName)) {
+                                MyNode neighbor = knownNodes.get(neighborName);
+                                InetAddress ipAddress = InetAddress.getByName(neighbor.getIP());
+                                DatagramPacket sendPacket = new DatagramPacket(receivedData, receivedData.length, ipAddress, neighbor.getPort());
+                                socket.send(sendPacket);
+                            }
                         }
                     }
 
