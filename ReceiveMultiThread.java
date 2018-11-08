@@ -195,6 +195,7 @@ public class ReceiveMultiThread implements Runnable {
                 } else if (msgType.equals("CMA")) {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": An ASCII message has been received");
 
+                    //format of packet = 62 header bytes + 1 byte for text length + the body of the text
                     String senderName = new String(Arrays.copyOfRange(receivedData, 30, 46));
                     int bodyLength = receivedData[62];
                     String asciiMessageBody = new String(Arrays.copyOfRange(receivedData, 63, 63 + bodyLength));
