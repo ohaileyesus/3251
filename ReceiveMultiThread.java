@@ -202,6 +202,15 @@ public class ReceiveMultiThread implements Runnable {
 
                     System.out.println("Node " + senderName + " says: " + asciiMessageBody);
 
+                    if (thisNode.equals(hub.getName())){
+                        for (String neighborName: knownNodes.keySet()) {
+                            MyNode neighbor = knownNodes.get(neighborName);
+                            InetAddress ipAddress = InetAddress.getByName(neighbor.getIP());
+                            DatagramPacket sendPacket = new DatagramPacket(receivedData, receivedData.length, ipAddress, neighbor.getPort());
+                            socket.send(sendPacket);
+                        }
+                    }
+
                 } else if (msgType.equals("PC")) {
 
 //                  read source star node name from messageBytes
