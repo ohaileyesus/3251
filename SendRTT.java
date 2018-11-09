@@ -85,7 +85,7 @@ public class SendRTT implements  Runnable{
         return message;
     }
 
-    public static byte[] convertIPtoByteArr(String ipAddress) {
+    public byte[] convertIPtoByteArr(String ipAddress) {
         String[] ip = ipAddress.split("\\.");
         byte[] ipAsByteArr = new byte[4];
         int temp;

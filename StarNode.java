@@ -16,12 +16,13 @@ public class StarNode{
     public static void main(String[] args) throws Exception{
 
         try {
+            System.out.println(InetAddress.getLocalHost().toString());
 //          read in command line arguments
             String nodeName = args[0];
             int localPort = Integer.parseInt(args[1]);
             String pocIPAddress = InetAddress.getByName(args[2]).getHostAddress();
             int pocPort = Integer.parseInt(args[3]);
-            int numberOfNodes = Integer.parseInt(args[4]);
+            int maxNodes = Integer.parseInt(args[4]);
 
 //          make currentNode and put in knownNodes map
             String localIPAddress = InetAddress.getLocalHost().getHostAddress();
@@ -30,21 +31,23 @@ public class StarNode{
 
             DatagramSocket socket = new DatagramSocket(localPort);
 
-            //POC Connect Thread
-            Thread pocConnect = new Thread(new ConnectToPOC(currentNode, knownNodes, pocIPAddress, pocPort, socket));
-            pocConnect.start();
+            if(args.length == 5) {
+                //POC Connect Thread
+                Thread pocConnect = new Thread(new ConnectToPOC(currentNode, knownNodes, pocIPAddress, pocPort, socket));
+                pocConnect.start();
+            }
 
             //Receiving Messages Thread - Omega
             Thread receiveThread = new Thread(new ReceiveMultiThread(nodeName, socket, knownNodes, hub, rttVector, eventLog));
             receiveThread.start();
 
-            //Calculating RTT Thread - Yizra
-            Thread sendRTT = new Thread(new SendRTT(nodeName, socket, knownNodes, eventLog));
-            sendRTT.start();
-
-            //Sending content Thread
-            Thread sendContent = new Thread(new SendContent(nodeName, socket, knownNodes, hub, rttVector, eventLog));
-            sendContent.start();
+//            //Calculating RTT Thread - Yizra
+//            Thread sendRTT = new Thread(new SendRTT(nodeName, socket, knownNodes, eventLog));
+//            sendRTT.start();
+//
+//            //Sending content Thread
+//            Thread sendContent = new Thread(new SendContent(nodeName, socket, knownNodes, hub, rttVector, eventLog, maxNodes));
+//            sendContent.start();
 
         } catch (UnknownHostException e) {
             System.out.println(e.getMessage());
@@ -82,5 +85,18 @@ public class StarNode{
 
         return message;
     }
+
+    public static byte[] convertIPtoByteArr(String ipAddress) {
+        String[] ip = ipAddress.split("\\.");
+        byte[] ipAsByteArr = new byte[4];
+        int temp;
+        for (int i = 0; i < 4; i++) {
+            temp = Integer.parseInt(ip[3 - i]);
+            ipAsByteArr[i] = (byte) temp;
+        }
+        return ipAsByteArr;
+    }
+
+
 
 }

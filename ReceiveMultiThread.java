@@ -30,15 +30,21 @@ public class ReceiveMultiThread implements Runnable {
     public void run() {
         try {
 
+            System.out.println("receive thread started");
+
             while (true) {
 
                 //receive packet
                 byte[] message1 = new byte[64000];
                 DatagramPacket receivePacket = new DatagramPacket(message1, message1.length);
+                System.out.println("waiting to receive at port: " + socket.getLocalPort());
                 socket.receive(receivePacket);
+                System.out.println("packet received");
                 byte[] receivedData = receivePacket.getData();
 
                 String msgType = new String(Arrays.copyOfRange(receivedData, 0, 30));
+
+                System.out.println("message type received: " + msgType);
 
                 if (msgType.equals("PD")) {
                     //read knownNodes list from object input stream
@@ -224,6 +230,8 @@ public class ReceiveMultiThread implements Runnable {
                     }
 
                 } else if (msgType.equals("PC")) {
+
+                    System.out.println("POC connect message received");
 
 //                  read source star node name from messageBytes
                     String name = new String(Arrays.copyOfRange(receivedData, 30, 46));

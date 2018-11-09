@@ -28,7 +28,7 @@ public class ConnectToPOC implements Runnable{
 
     }
 
-    public static void connectToPOC(MyNode thisNode, Map<String, MyNode> knownNodes, String pocIP, int pocPort, DatagramSocket socket) {
+    public void connectToPOC(MyNode thisNode, Map<String, MyNode> knownNodes, String pocIP, int pocPort, DatagramSocket socket) {
 
         try {
 
@@ -58,11 +58,12 @@ public class ConnectToPOC implements Runnable{
             while (true) {
 
 //              there are 24 "5-sec periods" in 2 minutes, so quit at 25th send attempt
-                if (sendAttempts == 1) {
+                if (sendAttempts == 24) {
                     System.out.println("POC did not come alive in time");
                     System.exit(0);
                 }
                 socket.send(sendPacket);
+                System.out.println("POC connect request sent to " + pocIP + " at port " + pocPort);
 
                 try {
                     socket.receive(receivePacket);
@@ -91,7 +92,7 @@ public class ConnectToPOC implements Runnable{
         }
     }
 
-    public static byte[] prepareHeader(String thisNode, String destNode, String msgtype) {
+    public byte[] prepareHeader(String thisNode, String destNode, String msgtype) {
 
         byte[] packetType = msgtype.getBytes();
         byte[] sourceName = thisNode.getBytes();
@@ -118,7 +119,7 @@ public class ConnectToPOC implements Runnable{
         return message;
     }
 
-    public static byte[] convertIPtoByteArr(String ipAddress) {
+    public byte[] convertIPtoByteArr(String ipAddress) {
         String[] ip = ipAddress.split("\\.");
         byte[] ipAsByteArr = new byte[4];
         int temp;
