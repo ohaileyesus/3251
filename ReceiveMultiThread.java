@@ -73,7 +73,8 @@ public class ReceiveMultiThread implements Runnable {
                     for (String name : knownNodes.keySet()) {
                         MyNode neighbor = knownNodes.get(name);
                         byte[] dataToSend = prepareHeader(neighbor.getName(), "PD");
-                        InetAddress ipAddress = InetAddress.getByAddress(neighbor.getIP().getBytes());
+                        byte[] ipAsByteArr = convertIPtoByteArr(neighbor.getIP());
+                        InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
                         DatagramPacket sendPacket = new DatagramPacket(dataToSend, dataToSend.length, ipAddress, neighbor.getPort());
                         socket.send(sendPacket);
                     }
@@ -87,7 +88,8 @@ public class ReceiveMultiThread implements Runnable {
 
 //                  read star node name from messageBytes to get IP and port
                     String name = new String(Arrays.copyOfRange(receivedData, 30, 46));
-                    InetAddress ipAddress = InetAddress.getByAddress(knownNodes.get(name).getIP().getBytes());
+                    byte[] ipAsByteArr = convertIPtoByteArr(knownNodes.get(name).getIP());
+                    InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
                     int port = knownNodes.get(name).getPort();
 
                     DatagramPacket sendPacket = new DatagramPacket(receivedData, receivedData.length, ipAddress, port);
@@ -116,7 +118,8 @@ public class ReceiveMultiThread implements Runnable {
                         for (String name : knownNodes.keySet()) {
                             if (!name.equals(thisNode)) {
                                 MyNode node = knownNodes.get(name);
-                                InetAddress ipAddress = InetAddress.getByAddress(node.getIP().getBytes());
+                                byte[] ipAsByteArr = convertIPtoByteArr(node.getIP());
+                                InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
                                 byte[] message = prepareHeader(node.getName(), "RTTs");
 
 //                              Put rttSum in body of packet
@@ -189,7 +192,8 @@ public class ReceiveMultiThread implements Runnable {
                         for (String neighborName: knownNodes.keySet()) {
                             if (!neighborName.equals(hub.getName()) && !neighborName.equals(senderName)) {
                                 MyNode neighbor = knownNodes.get(neighborName);
-                                InetAddress ipAddress = InetAddress.getByName(neighbor.getIP());
+                                byte[] ipAsByteArr = convertIPtoByteArr(neighbor.getIP());
+                                InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
                                 DatagramPacket sendPacket = new DatagramPacket(receivedData, receivedData.length, ipAddress, neighbor.getPort());
                                 socket.send(sendPacket);
                             }
@@ -211,7 +215,8 @@ public class ReceiveMultiThread implements Runnable {
                         for (String neighborName: knownNodes.keySet()) {
                             if (!neighborName.equals(hub.getName()) && !neighborName.equals(senderName)) {
                                 MyNode neighbor = knownNodes.get(neighborName);
-                                InetAddress ipAddress = InetAddress.getByName(neighbor.getIP());
+                                byte[] ipAsByteArr = convertIPtoByteArr(neighbor.getIP());
+                                InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
                                 DatagramPacket sendPacket = new DatagramPacket(receivedData, receivedData.length, ipAddress, neighbor.getPort());
                                 socket.send(sendPacket);
                             }
@@ -224,7 +229,7 @@ public class ReceiveMultiThread implements Runnable {
                     String name = new String(Arrays.copyOfRange(receivedData, 30, 46));
                     byte[] message = prepareHeader(name, "PCr");
 
-//                  read source star node name from messageBytes
+//                  read source star node ip and port from messageBytes
                     InetAddress ipAddress = InetAddress.getByAddress(Arrays.copyOfRange(receivedData, 62, 66));
                     int port = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 66, 70)).getInt();
 
@@ -241,7 +246,9 @@ public class ReceiveMultiThread implements Runnable {
                     //recalculate RTT by sending RTTm msg to all knownNodes
                     for (String name : knownNodes.keySet()) {
                         MyNode myNode = knownNodes.get(name);
-                        InetAddress ipAddress = InetAddress.getByAddress(myNode.getIP().getBytes());
+
+                        byte[] ipAsByteArr = convertIPtoByteArr(myNode.getIP());
+                        InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
                         byte[] message = prepareHeader(myNode.getName(), "RTTm");
                         DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, myNode.getPort());
                         socket.send(sendPacket);
@@ -287,6 +294,17 @@ public class ReceiveMultiThread implements Runnable {
         }
 
         return message;
+    }
+
+    public byte[] convertIPtoByteArr(String ipAddress) {
+        String[] ip = ipAddress.split("\\.");
+        byte[] ipAsByteArr = new byte[4];
+        int temp;
+        for (int i = 0; i < 4; i++) {
+            temp = Integer.parseInt(ip[3 - i]);
+            ipAsByteArr[i] = (byte) temp;
+        }
+        return ipAsByteArr;
     }
 
 }

@@ -53,7 +53,8 @@ public class SendContent implements Runnable{
                         for (int i = 0; i < text.length; i++) {
                             message[index++] = text[i];
                         }
-                        InetAddress ipAddress = InetAddress.getByAddress(hub.getIP().getBytes());
+                        byte[] ipAsByteArr = convertIPtoByteArr(hub.getIP());
+                        InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
                         DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
                         socket.send(sendPacket);
                     }
@@ -90,7 +91,8 @@ public class SendContent implements Runnable{
                                 message[index++] = fileAsByteArr[i];
                             }
 
-                            InetAddress ipAddress = InetAddress.getByAddress(hub.getIP().getBytes());
+                            byte[] ipAsByteArr = convertIPtoByteArr(hub.getIP());
+                            InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
                             DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
                             socket.send(sendPacket);
 
@@ -119,13 +121,15 @@ public class SendContent implements Runnable{
                     if(hub.getName().equals(thisNode)) {
                         //send Delete Hub msg
                         byte[] message = prepareHeader(thisNode, hub.getName(), "DH");
-                        InetAddress ipAddress = InetAddress.getByAddress(hub.getIP().getBytes());
+                        byte[] ipAsByteArr = convertIPtoByteArr(hub.getIP());
+                        InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
                         DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
                         socket.send(sendPacket);
                     } else {
                         //send Delete Regular msg
                         byte[] message = prepareHeader(thisNode, hub.getName(), "DR");
-                        InetAddress ipAddress = InetAddress.getByAddress(hub.getIP().getBytes());
+                        byte[] ipAsByteArr = convertIPtoByteArr(hub.getIP());
+                        InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
                         DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
                         socket.send(sendPacket);
                     }
@@ -188,7 +192,14 @@ public class SendContent implements Runnable{
         return message;
     }
 
-
-
-
+    public static byte[] convertIPtoByteArr(String ipAddress) {
+        String[] ip = ipAddress.split("\\.");
+        byte[] ipAsByteArr = new byte[4];
+        int temp;
+        for (int i = 0; i < 4; i++) {
+            temp = Integer.parseInt(ip[3 - i]);
+            ipAsByteArr[i] = (byte) temp;
+        }
+        return ipAsByteArr;
+    }
 }

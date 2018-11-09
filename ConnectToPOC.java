@@ -35,7 +35,7 @@ public class ConnectToPOC implements Runnable{
             byte[] message = prepareHeader(thisNode.getName(), "no name", "PC");
 
 //          Put source IP and Port in body
-            byte[] sourceIP = thisNode.getIP().getBytes();
+            byte[] sourceIP = convertIPtoByteArr(thisNode.getIP());
             int index = 62;
             for (int i = 0; i < sourceIP.length; i++) {
                 message[index++] = sourceIP[i];
@@ -45,13 +45,7 @@ public class ConnectToPOC implements Runnable{
                 message[index++] = sourcePort[i];
             }
 
-            String[] ip = pocIP.split("\\.");
-            byte[] ipAsByteArr = new byte[4];
-            int temp;
-            for (int i = 0; i < 4; i++) {
-                temp = Integer.parseInt(ip[3 - i]);
-                ipAsByteArr[i] = (byte) temp;
-            }
+            byte[] ipAsByteArr = convertIPtoByteArr(pocIP);
             InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
             DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, pocPort);
             socket.setSoTimeout(5000);
@@ -64,9 +58,9 @@ public class ConnectToPOC implements Runnable{
             while (true) {
 
 //              there are 24 "5-sec periods" in 2 minutes, so quit at 25th send attempt
-                if (sendAttempts == 25) {
-                    System.exit(0);
+                if (sendAttempts == 1) {
                     System.out.println("POC did not come alive in time");
+                    System.exit(0);
                 }
                 socket.send(sendPacket);
 
@@ -122,6 +116,17 @@ public class ConnectToPOC implements Runnable{
         }
 
         return message;
+    }
+
+    public static byte[] convertIPtoByteArr(String ipAddress) {
+        String[] ip = ipAddress.split("\\.");
+        byte[] ipAsByteArr = new byte[4];
+        int temp;
+        for (int i = 0; i < 4; i++) {
+            temp = Integer.parseInt(ip[3 - i]);
+            ipAsByteArr[i] = (byte) temp;
+        }
+        return ipAsByteArr;
     }
 
 }

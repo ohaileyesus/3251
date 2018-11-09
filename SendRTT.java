@@ -27,7 +27,8 @@ public class SendRTT implements  Runnable{
             while (true) {
                 for (String name : knownNodes.keySet()) {
                     MyNode myNode = knownNodes.get(name);
-                    InetAddress ipAddress = InetAddress.getByAddress(myNode.getIP().getBytes());
+                    byte[] ipAsByteArr = convertIPtoByteArr(myNode.getIP());
+                    InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
                     byte[] message = preparePacket(myNode);
                     DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, myNode.getPort());
                     socket.send(sendPacket);
@@ -82,6 +83,17 @@ public class SendRTT implements  Runnable{
         }
 
         return message;
+    }
+
+    public static byte[] convertIPtoByteArr(String ipAddress) {
+        String[] ip = ipAddress.split("\\.");
+        byte[] ipAsByteArr = new byte[4];
+        int temp;
+        for (int i = 0; i < 4; i++) {
+            temp = Integer.parseInt(ip[3 - i]);
+            ipAsByteArr[i] = (byte) temp;
+        }
+        return ipAsByteArr;
     }
 
 }
