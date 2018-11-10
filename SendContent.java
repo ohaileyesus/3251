@@ -140,19 +140,23 @@ public class SendContent implements Runnable{
 
                     } else if (request.contains("disconnect")) {
                         if (hub.getName().equals(thisNode)) {
-                            //send Delete Hub msg
-                            byte[] message = prepareHeader(thisNode, hub.getName(), "Dhub");
-                            byte[] ipAsByteArr = convertIPtoByteArr(hub.getIP());
-                            InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
-                            DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
-                            socket.send(sendPacket);
+                            for (String neighborName : knownNodes.keySet()) {
+                                //send Delete Hub msg
+                                byte[] message = prepareHeader(neighborName, hub.getName(), "Dhub");
+                                byte[] ipAsByteArr = convertIPtoByteArr(hub.getIP());
+                                InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
+                                DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
+                                socket.send(sendPacket);
+                            }
                         } else {
-                            //send Delete Regular msg
-                            byte[] message = prepareHeader(thisNode, hub.getName(), "Dreg");
-                            byte[] ipAsByteArr = convertIPtoByteArr(hub.getIP());
-                            InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
-                            DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
-                            socket.send(sendPacket);
+                            for (String neighborName : knownNodes.keySet()) {
+                                //send Delete Regular msg
+                                byte[] message = prepareHeader(neighborName, hub.getName(), "Dreg");
+                                byte[] ipAsByteArr = convertIPtoByteArr(hub.getIP());
+                                InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
+                                DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
+                                socket.send(sendPacket);
+                            }
                         }
                         eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A node disconnected");
 
