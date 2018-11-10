@@ -93,9 +93,16 @@ public class ReceiveMultiThread implements Runnable {
                             MyNode neighbor = knownNodes.get(name);
                             byte[] dataToSend = prepareHeader(neighbor.getName(), "Pdis");
 
-                            //format of packet = 62 header bytes + 1 byte for object length + the objstream
-                            dataToSend[62] = (byte) knownNodesAsByteArray.length;
-                            int index = 63;
+                            //format of packet = 62 header bytes + 4 byte for object length + the objstream
+                            int length = knownNodesAsByteArray.length;
+                            byte[] lengthBytes = ByteBuffer.allocate(4).putInt(length).array();
+                            dataToSend[62] = lengthBytes[0];
+                            dataToSend[63] = lengthBytes[1];
+                            dataToSend[64] = lengthBytes[2];
+                            dataToSend[65] = lengthBytes[3];
+
+
+                            int index = 66;
                             for (int i = 0; i < knownNodesAsByteArray.length; i++) {
                                 dataToSend[index++] = knownNodesAsByteArray[i];
                             }
@@ -209,12 +216,12 @@ public class ReceiveMultiThread implements Runnable {
                 } else if (msgType.equals("Mfil")) {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A file has been received");
 
-                    int fileNameLength = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 62, 63)).getInt();
-                    int fileContentLength = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 63, 64)).getInt();
-                    int startOfContent = 64 + fileNameLength;
-                    String fileName = new String(Arrays.copyOfRange(receivedData, 64, startOfContent));
-                    int endOfContent = startOfContent + fileContentLength;
-                    byte[] fileContent = Arrays.copyOfRange(receivedData, startOfContent, endOfContent);
+                    int fileNameLength = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 62, 66)).getInt();
+                    String fileName = new String(Arrays.copyOfRange(receivedData, 66, 66 + fileNameLength));
+
+                    int fileContentLength = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 66 + fileNameLength, 66 + fileNameLength + 4)).getInt();
+
+                    byte[] fileContent = Arrays.copyOfRange(receivedData, 66 + fileNameLength + 4, 66 + fileNameLength + 4 + fileContentLength);
                     File targetFile = new File("/" + fileName);
                     OutputStream outStream = new FileOutputStream(targetFile);
                     outStream.write(fileContent);
@@ -238,8 +245,8 @@ public class ReceiveMultiThread implements Runnable {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": An ASCII message has been received");
 
                     //format of packet = 62 header bytes + 1 byte for text length + the body of the text
-                    int bodyLength = receivedData[62];
-                    String asciiMessageBody = new String(Arrays.copyOfRange(receivedData, 63, 63 + bodyLength));
+                    int bodyLength = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 62, 66)).getInt();
+                    String asciiMessageBody = new String(Arrays.copyOfRange(receivedData, 66, 66 + bodyLength));
 
                     System.out.println("Node " + senderName + " says: " + asciiMessageBody);
 

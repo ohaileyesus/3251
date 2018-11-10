@@ -97,7 +97,7 @@ public class ConnectToPOC implements Runnable{
                                 MyNode neighbor = knownNodes.get(neighborName);
                                 byte[] dataToSend = prepareHeader(thisNode.getName(), neighbor.getName(), "Pdis");
 
-                                //format of packet = 62 header bytes + 1 byte for object length + the objstream
+                                //format of packet = 62 header bytes + 4 byte for object length + the objstream
                                 int length = knownNodesAsByteArray.length;
                                 byte[] lengthBytes = ByteBuffer.allocate(4).putInt(length).array();
                                 dataToSend[62] = lengthBytes[0];

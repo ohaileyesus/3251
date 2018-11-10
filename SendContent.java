@@ -6,6 +6,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Scanner;
@@ -50,9 +51,16 @@ public class SendContent implements Runnable{
 
                                 //Put text in body of packet
                                 byte[] text = request.substring(5, request.length()).getBytes();
-                                //format of packet = 62 header bytes + 1 byte for text length + the body of the text
-                                message[62] = (byte) text.length;
-                                int index = 63;
+                                //format of packet = 62 header bytes + 4 bytes for text length + the body of the text
+                                int length = text.length;
+                                byte[] lengthBytes = ByteBuffer.allocate(4).putInt(length).array();
+                                message[62] = lengthBytes[0];
+                                message[63] = lengthBytes[1];
+                                message[64] = lengthBytes[2];
+                                message[65] = lengthBytes[3];
+
+
+                                int index = 66;
                                 for (int i = 0; i < text.length; i++) {
                                     message[index++] = text[i];
                                 }
@@ -74,22 +82,34 @@ public class SendContent implements Runnable{
                                     fileInputStream.read(fileAsByteArr);
                                     byte[] message = prepareHeader(thisNode, hub.getName(), "CMF");
 
-                                    //format of packet = 62 bytes header + 1 byte filename length + filename + 1 byte file length + file
+                                    //format of packet = 62 bytes header + 4 bytes filename length + filename + 4 byte file length + file
 
                                     //1 byte filename length
-                                    message[62] = (byte) filename.length();
+
+                                    int length = filename.length();
+                                    byte[] lengthBytes = ByteBuffer.allocate(4).putInt(length).array();
+                                    message[62] = lengthBytes[0];
+                                    message[63] = lengthBytes[1];
+                                    message[64] = lengthBytes[2];
+                                    message[65] = lengthBytes[3];
 
                                     //filename
-                                    int index = 63;
+                                    int index = 66;
                                     for (int i = 0; i < filename.length(); i++) {
                                         message[index++] = (byte) filename.charAt(i);
                                     }
 
-                                    //1 byte file length
-                                    message[index + filename.length()] = (byte) file.length();
+                                    //4 byte file length
+                                    int startingIndex = index + filename.length();
+                                    int lengthFile = (int)file.length();
+                                    byte[] lengthFileBytes = ByteBuffer.allocate(4).putInt(lengthFile).array();
+                                    message[startingIndex++] = lengthBytes[0];
+                                    message[startingIndex++] = lengthBytes[1];
+                                    message[startingIndex++] = lengthBytes[2];
+                                    message[startingIndex++] = lengthBytes[3];
 
                                     //file
-                                    index = index + filename.length() + 1;
+                                    index = startingIndex;
                                     for (int i = 0; i < fileAsByteArr.length; i++) {
                                         message[index++] = fileAsByteArr[i];
                                     }
