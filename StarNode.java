@@ -9,7 +9,7 @@ import java.util.Map;
 public class StarNode{
 
     static Map<String, MyNode> knownNodes = new HashMap<String, MyNode>();
-    static MyNode hub = null;
+    static MyNode hub = new MyNode(null, null, 0);
     static Map<String, Long> rttVector = new HashMap<>();
     static ArrayList<String> eventLog = new ArrayList<>();
 
@@ -47,7 +47,7 @@ public class StarNode{
             Thread sendRTT = new Thread(new SendRTT(nodeName, socket, knownNodes, eventLog));
             sendRTT.start();
 
-            Thread.sleep(40000);
+            Thread.sleep(5000);
             int size = rttVector.size();
             String name = hub.getName();
             int i = 1 + 1;

@@ -30,7 +30,7 @@ public class ReceiveMultiThread implements Runnable {
         try {
 
             System.out.println("receive thread started");
-
+            hub = new MyNode("te", "e", 8);
             while (true) {
 
                 //receive packet
@@ -203,7 +203,10 @@ public class ReceiveMultiThread implements Runnable {
                                 minNode = knownNodes.get(nodeName);
                             }
                         }
-                        hub = minNode;
+                        hub.setName(minNode.getName());
+                        hub.setIp(minNode.getIP());
+                        hub.setPort(minNode.getPort());
+
                     }
                 } else if (msgType.equals("Mfil")) {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A file has been received");
