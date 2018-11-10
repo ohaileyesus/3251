@@ -10,7 +10,7 @@ public class StarNode{
 
     static Map<String, MyNode> knownNodes = new HashMap<String, MyNode>();
     static MyNode hub = null;
-    static Map<String, Integer> rttVector = new HashMap<>();
+    static Map<String, Long> rttVector = new HashMap<>();
     static ArrayList<String> eventLog = new ArrayList<>();
 
     public static void main(String[] args) throws Exception{
@@ -43,9 +43,9 @@ public class StarNode{
             Thread receiveThread = new Thread(new ReceiveMultiThread(nodeName, socket, knownNodes, hub, rttVector, eventLog));
             receiveThread.start();
 
-//            //Calculating RTT Thread - Yizra
-//            Thread sendRTT = new Thread(new SendRTT(nodeName, socket, knownNodes, eventLog));
-//            sendRTT.start();
+            //Calculating RTT Thread - Yizra
+            Thread sendRTT = new Thread(new SendRTT(nodeName, socket, knownNodes, eventLog));
+            sendRTT.start();
 //
 //            //Sending content Thread
 //            Thread sendContent = new Thread(new SendContent(nodeName, socket, knownNodes, hub, rttVector, eventLog, maxNodes));

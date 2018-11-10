@@ -11,14 +11,14 @@ public class ReceiveMultiThread implements Runnable {
     private Map<String, MyNode> knownNodes;
     private DatagramSocket socket;
     private MyNode hub;
-    private Map<String, Integer> rttVector;
-    private Map<String, Integer> rttSums = new HashMap<>();
+    private Map<String, Long> rttVector;
+    private Map<String, Long> rttSums = new HashMap<>();
     private ArrayList<String> eventLog;
 
     private boolean notFull = true;
 
     public ReceiveMultiThread(String thisNode, DatagramSocket socket, Map<String, MyNode> knownNodes, MyNode hub,
-                              Map<String, Integer> rttVector, ArrayList<String> eventLog) {
+                              Map<String, Long> rttVector, ArrayList<String> eventLog) {
         this.thisNode = thisNode;
         this.socket = socket;
         this.knownNodes = knownNodes;
@@ -146,16 +146,16 @@ public class ReceiveMultiThread implements Runnable {
                 } else if (msgType.equals("RTTr")) {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": An RTT response has been received");
 
-                    int timeReceived = (int) System.currentTimeMillis();
-                    int timeSent = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 46, 50)).getInt();
-                    int rtt = timeReceived - timeSent;
+                    long timeReceived = System.currentTimeMillis();
+                    long timeSent = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 62, 70)).getLong();
+                    long rtt = timeReceived - timeSent;
                     rttVector.put(thisNode, rtt);
 
 //                  if rtt is received from every node in knownNodes list minus itself
                     if (rttVector.size() == knownNodes.size() - 1) {
 
 //                      find rttSum of this node
-                        int rttSum = 0;
+                        long rttSum = 0;
                         for (String name : rttVector.keySet()) {
                             rttSum += rttVector.get(name);
                         }
@@ -170,7 +170,7 @@ public class ReceiveMultiThread implements Runnable {
                                 byte[] message = prepareHeader(node.getName(), "RTTs");
 
 //                              Put rttSum in body of packet
-                                byte[] rttSumBytes = ByteBuffer.allocate(4).putInt(rttSum).array();
+                                byte[] rttSumBytes = ByteBuffer.allocate(8).putLong(rttSum).array();
                                 int index = 62;
                                 for (int i = 0; i < rttSumBytes.length; i++) {
                                     message[index++] = rttSumBytes[i];
@@ -184,7 +184,7 @@ public class ReceiveMultiThread implements Runnable {
 //              RTTs = RTT Sum Packet
                 } else if (msgType.equals("RTTs")) {
 
-                    int sum = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 62, 66)).getInt();
+                    long sum = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 62, 70)).getLong();
 
                     if(!senderName.equals(thisNode)) {
                         rttSums.put(senderName, sum);
@@ -194,7 +194,7 @@ public class ReceiveMultiThread implements Runnable {
                     if (rttSums.size() == knownNodes.size() && notFull) {
                         notFull = false;
 //                      find the node with the smallest rtt sum
-                        int min = Integer.MAX_VALUE;
+                        long min = Long.MAX_VALUE;
                         MyNode minNode = null;
                         for (String nodeName : knownNodes.keySet()) {
                             if (rttSums.get(nodeName) < min) {
@@ -206,7 +206,7 @@ public class ReceiveMultiThread implements Runnable {
 
 //                  find new hub if there has been a change to rtt sum list
                     } else if (rttSums.size() == knownNodes.size() && rttSums.containsKey(senderName)) {
-                        int min = Integer.MAX_VALUE;
+                        long min = Long.MAX_VALUE;
                         MyNode minNode = null;
                         for (String nodeName : knownNodes.keySet()) {
                             if (rttSums.get(nodeName) < min) {

@@ -73,8 +73,8 @@ public class SendRTT implements  Runnable{
             message[index++] = destName[i];
         }
 
-        int timeSent = (int)System.currentTimeMillis();
-        byte[] timeSentBytes = ByteBuffer.allocate(4).putInt(timeSent).array();
+        long timeSent = System.currentTimeMillis();
+        byte[] timeSentBytes = ByteBuffer.allocate(8).putLong(timeSent).array();
 
 //      start of body
         index = 62;
