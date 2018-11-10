@@ -30,7 +30,6 @@ public class ReceiveMultiThread implements Runnable {
         try {
 
             System.out.println("receive thread started");
-            hub = new MyNode("te", "e", 8);
             while (true) {
 
                 //receive packet
