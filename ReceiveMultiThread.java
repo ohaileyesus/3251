@@ -44,19 +44,25 @@ public class ReceiveMultiThread implements Runnable {
 
                 String msgType = new String(Arrays.copyOfRange(receivedData, 0, 4));
 
+                byte[] senderNameBytes = trim(Arrays.copyOfRange(receivedData, 30, 46));
+                String senderName = new String(senderNameBytes);
+
                 System.out.println("message type received: " + msgType);
 
                 if (msgType.equals("Pdis")) {
-                    //read knownNodes list from object input stream
-                    ByteArrayInputStream in = new ByteArrayInputStream(Arrays.copyOfRange(receivedData, 62, receivedData.length));
-                    ObjectInputStream is = new ObjectInputStream(in);
+
                     try {
+                        //read knownNodes list from object input stream
+                        int length = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 62, 66)).getInt();
+                        ByteArrayInputStream in = new ByteArrayInputStream(Arrays.copyOfRange(receivedData, 66, 66 + length));
+                        ObjectInputStream is = new ObjectInputStream(in);
+
                         Map<String, MyNode> nodesToAppend = (Map<String, MyNode>) is.readObject();
 
                         //add unknown nodes to knownNodes map
                         int sizeBefore = knownNodes.size();
                         for (String nameOfNodeToAppend: nodesToAppend.keySet()) {
-                            if (!nodesToAppend.containsKey(nameOfNodeToAppend)) {
+                            if (!knownNodes.containsKey(nameOfNodeToAppend)) {
                                 knownNodes.put(nameOfNodeToAppend, nodesToAppend.get(nameOfNodeToAppend));
                                 eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A new node has been discovered");
                             }
@@ -68,6 +74,8 @@ public class ReceiveMultiThread implements Runnable {
 
                     } catch (ClassNotFoundException e) {
                         e.printStackTrace();
+                    } catch (IOException e) {
+                        System.out.println(e.toString());
                     }
 
 
@@ -116,10 +124,9 @@ public class ReceiveMultiThread implements Runnable {
                     receivedData[3] = 'r';
 
 //                  read star node name from messageBytes to get IP and port
-                    String name = new String(Arrays.copyOfRange(receivedData, 30, 46));
-                    byte[] ipAsByteArr = convertIPtoByteArr(knownNodes.get(name).getIP());
+                    byte[] ipAsByteArr = convertIPtoByteArr(knownNodes.get(senderName).getIP());
                     InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
-                    int port = knownNodes.get(name).getPort();
+                    int port = knownNodes.get(senderName).getPort();
 
                     DatagramPacket sendPacket = new DatagramPacket(receivedData, receivedData.length, ipAddress, port);
                     socket.send(sendPacket);
@@ -153,7 +160,7 @@ public class ReceiveMultiThread implements Runnable {
 
 //                              Put rttSum in body of packet
                                 byte[] rttSumBytes = ByteBuffer.allocate(4).putInt(rttSum).array();
-                                int index = 46;
+                                int index = 62;
                                 for (int i = 0; i < rttSumBytes.length; i++) {
                                     message[index++] = rttSumBytes[i];
                                 }
@@ -166,11 +173,10 @@ public class ReceiveMultiThread implements Runnable {
 //              RTTs = RTT Sum Packet
                 } else if (msgType.equals("RTTs")) {
 
-                    String name = new String(Arrays.copyOfRange(receivedData, 30, 46));
-                    int sum = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 46, 50)).getInt();
+                    int sum = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 62, 66)).getInt();
 
-                    if(!name.equals(thisNode)) {
-                        rttSums.put(name, sum);
+                    if(!senderName.equals(thisNode)) {
+                        rttSums.put(senderName, sum);
                     }
 
 //                  find hub if node has N rtt sums for the first time
@@ -188,7 +194,7 @@ public class ReceiveMultiThread implements Runnable {
                         hub = minNode;
 
 //                  find new hub if there has been a change to rtt sum list
-                    } else if (rttSums.size() == knownNodes.size() && rttSums.containsKey(name)) {
+                    } else if (rttSums.size() == knownNodes.size() && rttSums.containsKey(senderName)) {
                         int min = Integer.MAX_VALUE;
                         MyNode minNode = null;
                         for (String nodeName : knownNodes.keySet()) {
@@ -203,7 +209,6 @@ public class ReceiveMultiThread implements Runnable {
                 } else if (msgType.equals("Mfil")) {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A file has been received");
 
-                    String senderName = new String(Arrays.copyOfRange(receivedData, 30, 46));
                     int fileNameLength = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 62, 63)).getInt();
                     int fileContentLength = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 63, 64)).getInt();
                     int startOfContent = 64 + fileNameLength;
@@ -233,7 +238,6 @@ public class ReceiveMultiThread implements Runnable {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": An ASCII message has been received");
 
                     //format of packet = 62 header bytes + 1 byte for text length + the body of the text
-                    String senderName = new String(Arrays.copyOfRange(receivedData, 30, 46));
                     int bodyLength = receivedData[62];
                     String asciiMessageBody = new String(Arrays.copyOfRange(receivedData, 63, 63 + bodyLength));
 
@@ -257,8 +261,7 @@ public class ReceiveMultiThread implements Runnable {
                     System.out.println("POC connect message received");
 
 //                  read source star node name from messageBytes
-                    String name = new String(Arrays.copyOfRange(receivedData, 30, 46));
-                    byte[] message = prepareHeader(name, "POCc");
+                    byte[] message = prepareHeader(senderName, "POCc");
 
 //                  read source star node ip and port from messageBytes
                     InetAddress ipAddress = InetAddress.getByAddress(Arrays.copyOfRange(receivedData, 62, 66));
@@ -270,10 +273,9 @@ public class ReceiveMultiThread implements Runnable {
 
                 } else if (msgType.equals("Dhub")) {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": The hub node has disconnected");
-                    String nodeToDelete = new String(Arrays.copyOfRange(receivedData, 30, 46));
-                    knownNodes.remove(nodeToDelete);
-                    rttVector.remove(nodeToDelete);
-                    rttSums.remove(nodeToDelete);
+                    knownNodes.remove(senderName);
+                    rttVector.remove(senderName);
+                    rttSums.remove(senderName);
 
                     //recalculate RTT by sending RTTm msg to all knownNodes
                     for (String name : knownNodes.keySet()) {
@@ -337,6 +339,17 @@ public class ReceiveMultiThread implements Runnable {
             ipAsByteArr[i] = (byte) temp;
         }
         return ipAsByteArr;
+    }
+
+    public byte[] trim(byte[] bytes)
+    {
+        int i = bytes.length - 1;
+        while (i >= 0 && bytes[i] == 0)
+        {
+            --i;
+        }
+
+        return Arrays.copyOf(bytes, i + 1);
     }
 
 }

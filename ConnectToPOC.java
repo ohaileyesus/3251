@@ -98,14 +98,23 @@ public class ConnectToPOC implements Runnable{
                                 byte[] dataToSend = prepareHeader(thisNode.getName(), neighbor.getName(), "Pdis");
 
                                 //format of packet = 62 header bytes + 1 byte for object length + the objstream
-                                dataToSend[62] = (byte) knownNodesAsByteArray.length;
-                                int ind = 63;
+                                int length = knownNodesAsByteArray.length;
+                                byte[] lengthBytes = ByteBuffer.allocate(4).putInt(length).array();
+                                dataToSend[62] = lengthBytes[0];
+                                dataToSend[63] = lengthBytes[1];
+                                dataToSend[64] = lengthBytes[2];
+                                dataToSend[65] = lengthBytes[3];
+
+
+
+                                int ind = 66;
                                 for (int i = 0; i < knownNodesAsByteArray.length; i++) {
-                                    dataToSend[index++] = knownNodesAsByteArray[i];
+                                    dataToSend[ind++] = knownNodesAsByteArray[i];
                                 }
 
                                 DatagramPacket sendPacket2 = new DatagramPacket(dataToSend, dataToSend.length, ipAddress, neighbor.getPort());
                                 socket.send(sendPacket2);
+                                System.out.println("peer discovery packet sent");
                             }
 
                         } finally {
@@ -117,7 +126,7 @@ public class ConnectToPOC implements Runnable{
                         }
 
 
-
+                        System.out.println("break");
                         break;
                     }
                 } catch (SocketTimeoutException e) {
