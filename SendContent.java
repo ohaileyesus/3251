@@ -142,23 +142,30 @@ public class SendContent implements Runnable{
                         if (hub.getName().equals(thisNode)) {
                             for (String neighborName : knownNodes.keySet()) {
                                 //send Delete Hub msg
-                                byte[] message = prepareHeader(neighborName, hub.getName(), "Dhub");
-                                byte[] ipAsByteArr = convertIPtoByteArr(hub.getIP());
-                                InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
-                                DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
-                                socket.send(sendPacket);
+                                if (!thisNode.equals(neighborName)) {
+                                    MyNode neighbor = knownNodes.get(neighborName);
+                                    byte[] message = prepareHeader(neighborName, hub.getName(), "Dhub");
+                                    byte[] ipAsByteArr = convertIPtoByteArr(neighbor.getIP());
+                                    InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
+                                    DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
+                                    socket.send(sendPacket);
+                                }
                             }
                         } else {
                             for (String neighborName : knownNodes.keySet()) {
                                 //send Delete Regular msg
-                                byte[] message = prepareHeader(neighborName, hub.getName(), "Dreg");
-                                byte[] ipAsByteArr = convertIPtoByteArr(hub.getIP());
-                                InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
-                                DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
-                                socket.send(sendPacket);
+                                if (!thisNode.equals(neighborName)) {
+                                    MyNode neighbor = knownNodes.get(neighborName);
+                                    byte[] message = prepareHeader(neighborName, hub.getName(), "Dreg");
+                                    byte[] ipAsByteArr = convertIPtoByteArr(neighbor.getIP());
+                                    InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
+                                    DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
+                                    socket.send(sendPacket);
+                                }
                             }
                         }
                         eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A node disconnected");
+                        break;
 
                     } else if (request.contains("show-log")) {
                         for (String event : eventLog) {
