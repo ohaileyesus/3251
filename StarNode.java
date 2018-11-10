@@ -47,9 +47,11 @@ public class StarNode{
             Thread sendRTT = new Thread(new SendRTT(nodeName, socket, knownNodes, eventLog));
             sendRTT.start();
 //
-//            //Sending content Thread
-//            Thread sendContent = new Thread(new SendContent(nodeName, socket, knownNodes, hub, rttVector, eventLog, maxNodes));
-//            sendContent.start();
+            //Sending content Thread
+            if (hub != null) {
+                Thread sendContent = new Thread(new SendContent(nodeName, socket, knownNodes, hub, rttVector, eventLog, maxNodes));
+                sendContent.start();
+            }
 
         } catch (UnknownHostException e) {
             System.out.println(e.getMessage());
