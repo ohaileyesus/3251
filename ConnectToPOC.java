@@ -127,6 +127,7 @@ public class ConnectToPOC implements Runnable{
 
 
                         System.out.println("break");
+                        socket.setSoTimeout(0);
                         break;
                     }
                 } catch (SocketTimeoutException e) {
