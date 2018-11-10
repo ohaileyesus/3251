@@ -47,11 +47,14 @@ public class StarNode{
             Thread sendRTT = new Thread(new SendRTT(nodeName, socket, knownNodes, eventLog));
             sendRTT.start();
 
-            while(true) {
-                if (hub!=null) {
-                    int num = 2 + 2;
-                }
-            }
+            Thread.sleep(10000);
+            int i = 1 + 1;
+
+//            while(true) {
+//                if (hub!=null) {
+//                    int num = 2 + 2;
+//                }
+//            }
 
 //
             //Sending content Thread
