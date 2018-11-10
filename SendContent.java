@@ -147,7 +147,7 @@ public class SendContent implements Runnable{
                                     byte[] message = prepareHeader(neighborName, hub.getName(), "Dhub");
                                     byte[] ipAsByteArr = convertIPtoByteArr(neighbor.getIP());
                                     InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
-                                    DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
+                                    DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, neighbor.getPort());
                                     socket.send(sendPacket);
                                 }
                             }
@@ -159,13 +159,11 @@ public class SendContent implements Runnable{
                                     byte[] message = prepareHeader(neighborName, hub.getName(), "Dreg");
                                     byte[] ipAsByteArr = convertIPtoByteArr(neighbor.getIP());
                                     InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
-                                    DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
+                                    DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, neighbor.getPort());
                                     socket.send(sendPacket);
                                 }
                             }
                         }
-                        eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A node disconnected");
-                        break;
 
                     } else if (request.contains("show-log")) {
                         for (String event : eventLog) {
