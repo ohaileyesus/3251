@@ -24,7 +24,6 @@ public class SendRTT implements  Runnable{
     public void run() {
 
         try {
-            while (true) {
                 for (String name : knownNodes.keySet()) {
                     MyNode myNode = knownNodes.get(name);
                     byte[] ipAsByteArr = convertIPtoByteArr(myNode.getIP());
@@ -38,7 +37,6 @@ public class SendRTT implements  Runnable{
                 }  catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                 }
-            }
 
         } catch (UnknownHostException e) {
             System.out.println(e.getMessage());

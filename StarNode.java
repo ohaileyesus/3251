@@ -44,10 +44,10 @@ public class StarNode{
             receiveThread.start();
 
             //Calculating RTT Thread - Yizra
-            Thread sendRTT = new Thread(new SendRTT(nodeName, socket, knownNodes, eventLog));
-            sendRTT.start();
+//            Thread sendRTT = new Thread(new SendRTT(nodeName, socket, knownNodes, eventLog));
+//            sendRTT.start();
 
-            Thread.sleep(5000);
+            Thread.sleep(20000);
             int size = rttVector.size();
             String name = hub.getName();
             int i = 1 + 1;

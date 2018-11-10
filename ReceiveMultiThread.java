@@ -117,6 +117,9 @@ public class ReceiveMultiThread implements Runnable {
                                     // ignore close exception
                                 }
                             }
+                        } else {
+                            Thread sendRTT = new Thread(new SendRTT(thisNode, socket, knownNodes, eventLog));
+                            sendRTT.start();
                         }
 
                     } catch (ClassNotFoundException e) {
