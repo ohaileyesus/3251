@@ -46,6 +46,9 @@ public class ReceiveMultiThread implements Runnable {
                 byte[] senderNameBytes = trim(Arrays.copyOfRange(receivedData, 30, 46));
                 String senderName = new String(senderNameBytes);
 
+                byte[] destNameBytes = trim(Arrays.copyOfRange(receivedData, 46, 62));
+                String destName = new String(destNameBytes);
+
                 System.out.println("message type received: " + msgType);
 
                 if (msgType.equals("Pdis")) {
@@ -148,7 +151,7 @@ public class ReceiveMultiThread implements Runnable {
                     long timeReceived = System.currentTimeMillis();
                     long timeSent = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 62, 70)).getLong();
                     long rtt = timeReceived - timeSent;
-                    rttVector.put(thisNode, rtt);
+                    rttVector.put(destName, rtt);
 
 //                  if rtt is received from every node in knownNodes list minus itself
                     if (rttVector.size() == knownNodes.size() - 1) {
@@ -189,7 +192,7 @@ public class ReceiveMultiThread implements Runnable {
                         rttSums.put(senderName, sum);
                     }
 
-//                  find hub if node has N rtt sums for the first time
+//                  find hub if node has N rtt sums
                     if (rttSums.size() == knownNodes.size()) {
 //                      find the node with the smallest rtt sum
                         long min = Long.MAX_VALUE;
