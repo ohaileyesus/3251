@@ -48,6 +48,7 @@ public class StarNode{
             sendRTT.start();
 
             Thread.sleep(10000);
+            String name = hub.getName();
             int i = 1 + 1;
 
 //            while(true) {
