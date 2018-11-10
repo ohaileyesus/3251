@@ -90,7 +90,7 @@ public class SendRTT implements  Runnable{
         byte[] ipAsByteArr = new byte[4];
         int temp;
         for (int i = 0; i < 4; i++) {
-            temp = Integer.parseInt(ip[3 - i]);
+            temp = Integer.parseInt(ip[i]);
             ipAsByteArr[i] = (byte) temp;
         }
         return ipAsByteArr;

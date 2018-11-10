@@ -16,6 +16,8 @@ public class StarNode{
     public static void main(String[] args) throws Exception{
 
         try {
+
+
             System.out.println(InetAddress.getLocalHost().toString());
 //          read in command line arguments
             String nodeName = args[0];
@@ -29,7 +31,7 @@ public class StarNode{
             MyNode currentNode = new MyNode(nodeName, localIPAddress, localPort);
             knownNodes.put(nodeName, currentNode);
 
-            DatagramSocket socket = new DatagramSocket(localPort);
+            DatagramSocket socket = new DatagramSocket(localPort, InetAddress.getLocalHost());
 
             if(args.length == 5) {
                 //POC Connect Thread
@@ -91,7 +93,7 @@ public class StarNode{
         byte[] ipAsByteArr = new byte[4];
         int temp;
         for (int i = 0; i < 4; i++) {
-            temp = Integer.parseInt(ip[3 - i]);
+            temp = Integer.parseInt(ip[i]);
             ipAsByteArr[i] = (byte) temp;
         }
         return ipAsByteArr;

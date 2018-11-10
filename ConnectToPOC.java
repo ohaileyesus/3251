@@ -32,7 +32,7 @@ public class ConnectToPOC implements Runnable{
 
         try {
 
-            byte[] message = prepareHeader(thisNode.getName(), "no name", "PC");
+            byte[] message = prepareHeader(thisNode.getName(), "no name", "POCr");
 
 //          Put source IP and Port in body
             byte[] sourceIP = convertIPtoByteArr(thisNode.getIP());
@@ -44,6 +44,8 @@ public class ConnectToPOC implements Runnable{
             for (int i = 0; i < sourcePort.length; i++) {
                 message[index++] = sourcePort[i];
             }
+
+
 
             byte[] ipAsByteArr = convertIPtoByteArr(pocIP);
             InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
@@ -63,13 +65,15 @@ public class ConnectToPOC implements Runnable{
                     System.exit(0);
                 }
                 socket.send(sendPacket);
-                System.out.println("POC connect request sent to " + pocIP + " at port " + pocPort);
+                System.out.println("POC connect request sent to " + ipAddress + " at port " + pocPort);
 
                 try {
                     socket.receive(receivePacket);
+                    System.out.println("received response");
                     byte[] receivedData = receivePacket.getData();
-                    String msgType = new String(Arrays.copyOfRange(receivedData, 0, 30));
-                    if (msgType.equals("PCr")) {
+                    String msgType = new String(Arrays.copyOfRange(receivedData, 0, 3));
+                    if (msgType.equals("POCc")) {
+                        System.out.println("POC confirmation received");
 //                      Add pocNode to knownNodes map
                         String name = new String(Arrays.copyOfRange(receivedData, 30, 46));
                         MyNode pocNode = new MyNode(name, pocIP, pocPort);
@@ -124,7 +128,7 @@ public class ConnectToPOC implements Runnable{
         byte[] ipAsByteArr = new byte[4];
         int temp;
         for (int i = 0; i < 4; i++) {
-            temp = Integer.parseInt(ip[3 - i]);
+            temp = Integer.parseInt(ip[i]);
             ipAsByteArr[i] = (byte) temp;
         }
         return ipAsByteArr;

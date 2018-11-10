@@ -42,11 +42,11 @@ public class ReceiveMultiThread implements Runnable {
                 System.out.println("packet received");
                 byte[] receivedData = receivePacket.getData();
 
-                String msgType = new String(Arrays.copyOfRange(receivedData, 0, 30));
+                String msgType = new String(Arrays.copyOfRange(receivedData, 0, 4));
 
                 System.out.println("message type received: " + msgType);
 
-                if (msgType.equals("PD")) {
+                if (msgType.equals("Pdis")) {
                     //read knownNodes list from object input stream
                     ByteArrayInputStream in = new ByteArrayInputStream(Arrays.copyOfRange(receivedData, 62, receivedData.length));
                     ObjectInputStream is = new ObjectInputStream(in);
@@ -177,7 +177,7 @@ public class ReceiveMultiThread implements Runnable {
                         hub = minNode;
                     }
 
-                } else if (msgType.equals("CMF")) {
+                } else if (msgType.equals("Mfil")) {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A file has been received");
 
                     String senderName = new String(Arrays.copyOfRange(receivedData, 30, 46));
@@ -206,7 +206,7 @@ public class ReceiveMultiThread implements Runnable {
                         }
                     }
 
-                } else if (msgType.equals("CMA")) {
+                } else if (msgType.equals("Masc")) {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": An ASCII message has been received");
 
                     //format of packet = 62 header bytes + 1 byte for text length + the body of the text
@@ -229,13 +229,13 @@ public class ReceiveMultiThread implements Runnable {
                         }
                     }
 
-                } else if (msgType.equals("PC")) {
+                } else if (msgType.equals("POCr")) {
 
                     System.out.println("POC connect message received");
 
 //                  read source star node name from messageBytes
                     String name = new String(Arrays.copyOfRange(receivedData, 30, 46));
-                    byte[] message = prepareHeader(name, "PCr");
+                    byte[] message = prepareHeader(name, "POCc");
 
 //                  read source star node ip and port from messageBytes
                     InetAddress ipAddress = InetAddress.getByAddress(Arrays.copyOfRange(receivedData, 62, 66));
@@ -243,8 +243,9 @@ public class ReceiveMultiThread implements Runnable {
 
                     DatagramPacket sendPacket = new DatagramPacket(receivedData, receivedData.length, ipAddress, port);
                     socket.send(sendPacket);
+                    System.out.println("POC confirmation sent");
 
-                } else if (msgType.equals("DH")) {
+                } else if (msgType.equals("Dhub")) {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": The hub node has disconnected");
                     String nodeToDelete = new String(Arrays.copyOfRange(receivedData, 30, 46));
                     knownNodes.remove(nodeToDelete);
@@ -262,7 +263,7 @@ public class ReceiveMultiThread implements Runnable {
                         socket.send(sendPacket);
                     }
 
-                } else if (msgType.equals("DR")) {
+                } else if (msgType.equals("Dreg")) {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A non-hub node has disconnected");
                     //remove from knownNodes, rttVector, and rttSums
                     String nodeToDelete = new String(Arrays.copyOfRange(receivedData, 30, 46));
@@ -309,7 +310,7 @@ public class ReceiveMultiThread implements Runnable {
         byte[] ipAsByteArr = new byte[4];
         int temp;
         for (int i = 0; i < 4; i++) {
-            temp = Integer.parseInt(ip[3 - i]);
+            temp = Integer.parseInt(ip[i]);
             ipAsByteArr[i] = (byte) temp;
         }
         return ipAsByteArr;
