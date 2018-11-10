@@ -37,148 +37,147 @@ public class SendContent implements Runnable{
     public void run() {
 
         while(true) {
-            if(knownNodes.size() == maxNodes) {
-                try {
-                    while (true) {
-                        System.out.println("enter command");
-                        Scanner scanner = new Scanner(System.in);
-                        String request = scanner.nextLine();
-                        if (request.contains("send")) {
+            try {
+                while (true) {
+                    System.out.println("enter command");
+                    Scanner scanner = new Scanner(System.in);
+                    String request = scanner.nextLine();
+                    if (request.contains("send")) {
 
-                            //if ASCII message
-                            if (request.contains("\"")) {
-                                byte[] message = prepareHeader(thisNode, hub.getName(), "CMA");
+                        //if ASCII message
+                        if (request.contains("\"")) {
+                            byte[] message = prepareHeader(thisNode, hub.getName(), "CMA");
 
-                                //Put text in body of packet
-                                byte[] text = request.substring(5, request.length()).getBytes();
-                                //format of packet = 62 header bytes + 4 bytes for text length + the body of the text
-                                int length = text.length;
+                            //Put text in body of packet
+                            byte[] text = request.substring(5, request.length()).getBytes();
+                            //format of packet = 62 header bytes + 4 bytes for text length + the body of the text
+                            int length = text.length;
+                            byte[] lengthBytes = ByteBuffer.allocate(4).putInt(length).array();
+                            message[62] = lengthBytes[0];
+                            message[63] = lengthBytes[1];
+                            message[64] = lengthBytes[2];
+                            message[65] = lengthBytes[3];
+
+
+                            int index = 66;
+                            for (int i = 0; i < text.length; i++) {
+                                message[index++] = text[i];
+                            }
+                            byte[] ipAsByteArr = convertIPtoByteArr(hub.getIP());
+                            InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
+                            DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
+                            socket.send(sendPacket);
+                        }
+                        //if file message
+                        else {
+                            //convert file into byte array
+                            String filename = request.substring(5, request.length());
+                            File file = new File(filename);
+                            byte[] fileAsByteArr = new byte[(int) file.length()];
+
+                            try {
+                                //put file into fileinputstream
+                                FileInputStream fileInputStream = new FileInputStream(file);
+                                fileInputStream.read(fileAsByteArr);
+                                byte[] message = prepareHeader(thisNode, hub.getName(), "CMF");
+
+                                //format of packet = 62 bytes header + 4 bytes filename length + filename + 4 byte file length + file
+
+                                //1 byte filename length
+
+                                int length = filename.length();
                                 byte[] lengthBytes = ByteBuffer.allocate(4).putInt(length).array();
                                 message[62] = lengthBytes[0];
                                 message[63] = lengthBytes[1];
                                 message[64] = lengthBytes[2];
                                 message[65] = lengthBytes[3];
 
-
+                                //filename
                                 int index = 66;
-                                for (int i = 0; i < text.length; i++) {
-                                    message[index++] = text[i];
+                                for (int i = 0; i < filename.length(); i++) {
+                                    message[index++] = (byte) filename.charAt(i);
                                 }
-                                byte[] ipAsByteArr = convertIPtoByteArr(hub.getIP());
-                                InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
-                                DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
-                                socket.send(sendPacket);
-                            }
-                            //if file message
-                            else {
-                                //convert file into byte array
-                                String filename = request.substring(5, request.length());
-                                File file = new File(filename);
-                                byte[] fileAsByteArr = new byte[(int) file.length()];
 
-                                try {
-                                    //put file into fileinputstream
-                                    FileInputStream fileInputStream = new FileInputStream(file);
-                                    fileInputStream.read(fileAsByteArr);
-                                    byte[] message = prepareHeader(thisNode, hub.getName(), "CMF");
+                                //4 byte file length
+                                int startingIndex = index + filename.length();
+                                int lengthFile = (int)file.length();
+                                byte[] lengthFileBytes = ByteBuffer.allocate(4).putInt(lengthFile).array();
+                                message[startingIndex++] = lengthBytes[0];
+                                message[startingIndex++] = lengthBytes[1];
+                                message[startingIndex++] = lengthBytes[2];
+                                message[startingIndex++] = lengthBytes[3];
 
-                                    //format of packet = 62 bytes header + 4 bytes filename length + filename + 4 byte file length + file
-
-                                    //1 byte filename length
-
-                                    int length = filename.length();
-                                    byte[] lengthBytes = ByteBuffer.allocate(4).putInt(length).array();
-                                    message[62] = lengthBytes[0];
-                                    message[63] = lengthBytes[1];
-                                    message[64] = lengthBytes[2];
-                                    message[65] = lengthBytes[3];
-
-                                    //filename
-                                    int index = 66;
-                                    for (int i = 0; i < filename.length(); i++) {
-                                        message[index++] = (byte) filename.charAt(i);
-                                    }
-
-                                    //4 byte file length
-                                    int startingIndex = index + filename.length();
-                                    int lengthFile = (int)file.length();
-                                    byte[] lengthFileBytes = ByteBuffer.allocate(4).putInt(lengthFile).array();
-                                    message[startingIndex++] = lengthBytes[0];
-                                    message[startingIndex++] = lengthBytes[1];
-                                    message[startingIndex++] = lengthBytes[2];
-                                    message[startingIndex++] = lengthBytes[3];
-
-                                    //file
-                                    index = startingIndex;
-                                    for (int i = 0; i < fileAsByteArr.length; i++) {
-                                        message[index++] = fileAsByteArr[i];
-                                    }
-
-                                    byte[] ipAsByteArr = convertIPtoByteArr(hub.getIP());
-                                    InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
-                                    DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
-                                    socket.send(sendPacket);
-
-                                } catch (FileNotFoundException e) {
-                                    System.out.println("File Not Found.");
-                                    e.printStackTrace();
-                                } catch (IOException e1) {
-                                    System.out.println("Error Reading The File.");
-                                    e1.printStackTrace();
+                                //file
+                                index = startingIndex;
+                                for (int i = 0; i < fileAsByteArr.length; i++) {
+                                    message[index++] = fileAsByteArr[i];
                                 }
-                            }
 
-                            eventLog.add(String.valueOf(System.currentTimeMillis()) + ": Sent message");
-
-                        } else if (request.contains("show-status")) {
-
-                            System.out.println("Active Nodes in the network: ");
-
-                            for (String nodeName : rttVector.keySet()) {
-                                System.out.println(nodeName + " is " + rttVector.get(nodeName) + " seconds away");
-                            }
-                            System.out.println("\n" + hub.getName() + " is the hub.");
-
-                        } else if (request.contains("disconnect")) {
-                            if (hub.getName().equals(thisNode)) {
-                                //send Delete Hub msg
-                                byte[] message = prepareHeader(thisNode, hub.getName(), "DH");
                                 byte[] ipAsByteArr = convertIPtoByteArr(hub.getIP());
                                 InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
                                 DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
                                 socket.send(sendPacket);
-                            } else {
-                                //send Delete Regular msg
-                                byte[] message = prepareHeader(thisNode, hub.getName(), "DR");
-                                byte[] ipAsByteArr = convertIPtoByteArr(hub.getIP());
-                                InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
-                                DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
-                                socket.send(sendPacket);
-                            }
-                            eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A node disconnected");
 
-                        } else if (request.contains("show-log")) {
-                            for (String event : eventLog) {
-                                System.out.println(event);
+                            } catch (FileNotFoundException e) {
+                                System.out.println("File Not Found.");
+                                e.printStackTrace();
+                            } catch (IOException e1) {
+                                System.out.println("Error Reading The File.");
+                                e1.printStackTrace();
                             }
                         }
-                    }
 
-                } catch (UnknownHostException e) {
-                    System.out.println(e.getMessage());
-                    System.exit(0);
-                } catch (IOException e) {
-                    System.out.println(e.getMessage());
-                    System.exit(0);
+                        eventLog.add(String.valueOf(System.currentTimeMillis()) + ": Sent message");
+
+                    } else if (request.contains("show-status")) {
+
+                        System.out.println("Active Nodes in the network: ");
+
+                        for (String nodeName : rttVector.keySet()) {
+                            System.out.println(nodeName + " is " + rttVector.get(nodeName) + " seconds away");
+                        }
+                        System.out.println("\n" + hub.getName() + " is the hub.");
+
+                    } else if (request.contains("disconnect")) {
+                        if (hub.getName().equals(thisNode)) {
+                            //send Delete Hub msg
+                            byte[] message = prepareHeader(thisNode, hub.getName(), "DH");
+                            byte[] ipAsByteArr = convertIPtoByteArr(hub.getIP());
+                            InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
+                            DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
+                            socket.send(sendPacket);
+                        } else {
+                            //send Delete Regular msg
+                            byte[] message = prepareHeader(thisNode, hub.getName(), "DR");
+                            byte[] ipAsByteArr = convertIPtoByteArr(hub.getIP());
+                            InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
+                            DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
+                            socket.send(sendPacket);
+                        }
+                        eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A node disconnected");
+
+                    } else if (request.contains("show-log")) {
+                        for (String event : eventLog) {
+                            System.out.println(event);
+                        }
+                    }
                 }
+
+            } catch (UnknownHostException e) {
+                System.out.println(e.getMessage());
+                System.exit(0);
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+                System.exit(0);
             }
         }
-
-
-
-
-
     }
+
+
+
+
+
+
 
     public byte[] prepareHeader(String thisNode, String destNode, String msgtype) {
 
