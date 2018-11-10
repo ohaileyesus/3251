@@ -99,16 +99,16 @@ public class SendContent implements Runnable{
                                 }
 
                                 //4 byte file length
-                                int startingIndex = index + filename.length();
+                                int startingIndex = index;
                                 int lengthFile = (int)file.length();
                                 byte[] lengthFileBytes = ByteBuffer.allocate(4).putInt(lengthFile).array();
-                                message[startingIndex++] = lengthBytes[0];
-                                message[startingIndex++] = lengthBytes[1];
-                                message[startingIndex++] = lengthBytes[2];
-                                message[startingIndex++] = lengthBytes[3];
+                                message[index++] = lengthFileBytes[0];
+                                message[index++] = lengthFileBytes[1];
+                                message[index++] = lengthFileBytes[2];
+                                message[index++] = lengthFileBytes[3];
 
                                 //file
-                                index = startingIndex;
+//                                index = startingIndex;
                                 for (int i = 0; i < fileAsByteArr.length; i++) {
                                     message[index++] = fileAsByteArr[i];
                                 }
