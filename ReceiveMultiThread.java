@@ -64,13 +64,59 @@ public class ReceiveMultiThread implements Runnable {
                         for (String nameOfNodeToAppend: nodesToAppend.keySet()) {
                             if (!knownNodes.containsKey(nameOfNodeToAppend)) {
                                 knownNodes.put(nameOfNodeToAppend, nodesToAppend.get(nameOfNodeToAppend));
-                                eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A new node has been discovered");
+//                                eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A new node has been discovered");
                             }
                         }
                         int sizeAfter = knownNodes.size();
 
                         //if knownNodes was already up to date, no need to continue
-                        if (sizeBefore == sizeAfter) break;
+                        if (sizeBefore != sizeAfter) {
+
+                            //pack knownNodes into proper format
+                            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                            ObjectOutputStream out;
+                            try {
+                                out = new ObjectOutputStream(bos);
+                                out.writeObject(knownNodes);
+                                out.flush();
+                                byte[] knownNodesAsByteArray = bos.toByteArray();
+
+                                //update every node with new knownNodes set
+                                for (String name : knownNodes.keySet()) {
+                                    if (!thisNode.equals(name)) {
+                                        MyNode neighbor = knownNodes.get(name);
+                                        byte[] dataToSend = prepareHeader(neighbor.getName(), "Pdis");
+
+                                        //format of packet = 62 header bytes + 4 byte for object length + the objstream
+                                        int lengthOfKnownNodes = knownNodesAsByteArray.length;
+                                        byte[] lengthBytes = ByteBuffer.allocate(4).putInt(lengthOfKnownNodes).array();
+                                        dataToSend[62] = lengthBytes[0];
+                                        dataToSend[63] = lengthBytes[1];
+                                        dataToSend[64] = lengthBytes[2];
+                                        dataToSend[65] = lengthBytes[3];
+
+
+                                        int index = 66;
+                                        for (int i = 0; i < knownNodesAsByteArray.length; i++) {
+                                            dataToSend[index++] = knownNodesAsByteArray[i];
+                                        }
+
+
+                                        byte[] ipAsByteArr = convertIPtoByteArr(neighbor.getIP());
+                                        InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
+                                        DatagramPacket sendPacket = new DatagramPacket(dataToSend, dataToSend.length, ipAddress, neighbor.getPort());
+                                        socket.send(sendPacket);
+                                    }
+                                }
+
+                            } finally {
+                                try {
+                                    bos.close();
+                                } catch (IOException ex) {
+                                    // ignore close exception
+                                }
+                            }
+                        }
 
                     } catch (ClassNotFoundException e) {
                         e.printStackTrace();
@@ -79,50 +125,6 @@ public class ReceiveMultiThread implements Runnable {
                     }
 
 
-                    //pack knownNodes into proper format
-                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                    ObjectOutputStream out;
-                    try {
-                        out = new ObjectOutputStream(bos);
-                        out.writeObject(knownNodes);
-                        out.flush();
-                        byte[] knownNodesAsByteArray = bos.toByteArray();
-
-                        //update every node with new knownNodes set
-                        for (String name : knownNodes.keySet()) {
-                            if (!thisNode.equals(name)) {
-                                MyNode neighbor = knownNodes.get(name);
-                                byte[] dataToSend = prepareHeader(neighbor.getName(), "Pdis");
-
-                                //format of packet = 62 header bytes + 4 byte for object length + the objstream
-                                int length = knownNodesAsByteArray.length;
-                                byte[] lengthBytes = ByteBuffer.allocate(4).putInt(length).array();
-                                dataToSend[62] = lengthBytes[0];
-                                dataToSend[63] = lengthBytes[1];
-                                dataToSend[64] = lengthBytes[2];
-                                dataToSend[65] = lengthBytes[3];
-
-
-                                int index = 66;
-                                for (int i = 0; i < knownNodesAsByteArray.length; i++) {
-                                    dataToSend[index++] = knownNodesAsByteArray[i];
-                                }
-
-
-                                byte[] ipAsByteArr = convertIPtoByteArr(neighbor.getIP());
-                                InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
-                                DatagramPacket sendPacket = new DatagramPacket(dataToSend, dataToSend.length, ipAddress, neighbor.getPort());
-                                socket.send(sendPacket);
-                            }
-                        }
-
-                    } finally {
-                        try {
-                            bos.close();
-                        } catch (IOException ex) {
-                            // ignore close exception
-                        }
-                    }
 
 
 
