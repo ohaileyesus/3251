@@ -17,14 +17,14 @@ public class SendContent implements Runnable{
     private Map<String, MyNode> knownNodes;
     DatagramSocket socket;
     private MyNode hub;
-    private Map<String, Integer> rttVector;
+    private Map<String, Long> rttVector;
     private ArrayList<String> eventLog;
     private int maxNodes;
 
 
 
     public SendContent(String thisNode, DatagramSocket socket, Map<String, MyNode> knownNodes, MyNode hub,
-                       Map<String, Integer> rttVector, ArrayList<String> eventLog, int maxNodes) {
+                       Map<String, Long> rttVector, ArrayList<String> eventLog, int maxNodes) {
         this.thisNode = thisNode;
         this.socket = socket;
         this.knownNodes = knownNodes;
