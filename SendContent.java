@@ -133,7 +133,7 @@ public class SendContent implements Runnable{
 
                         System.out.println("Active Nodes in the network: ");
 
-                        for (String nodeName : rttVector.keySet()) {
+                        for (String nodeName : knownNodes.keySet()) {
                             System.out.println(nodeName + " is " + rttVector.get(nodeName) + " seconds away");
                         }
                         System.out.println("\n" + hub.getName() + " is the hub.");
@@ -141,14 +141,14 @@ public class SendContent implements Runnable{
                     } else if (request.contains("disconnect")) {
                         if (hub.getName().equals(thisNode)) {
                             //send Delete Hub msg
-                            byte[] message = prepareHeader(thisNode, hub.getName(), "DH");
+                            byte[] message = prepareHeader(thisNode, hub.getName(), "Dhub");
                             byte[] ipAsByteArr = convertIPtoByteArr(hub.getIP());
                             InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
                             DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
                             socket.send(sendPacket);
                         } else {
                             //send Delete Regular msg
-                            byte[] message = prepareHeader(thisNode, hub.getName(), "DR");
+                            byte[] message = prepareHeader(thisNode, hub.getName(), "Dreg");
                             byte[] ipAsByteArr = convertIPtoByteArr(hub.getIP());
                             InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
                             DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, hub.getPort());
