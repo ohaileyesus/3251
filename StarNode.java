@@ -52,22 +52,16 @@ public class StarNode{
             String name = hub.getName();
             int i = 1 + 1;
 
-//            while(true) {
-//                if (hub!=null) {
-//                    int num = 2 + 2;
-//                }
-//            }
 
-//
-            //Sending content Thread
-//            boolean started = false;
-//            while (!started ) {
-//                if (hub != null) {
-//                    Thread sendContent = new Thread(new SendContent(nodeName, socket, knownNodes, hub, rttVector, eventLog, maxNodes));
-//                    sendContent.start();
-//                    started = true;
-//                }
-//            }
+//          Sending content Thread
+            boolean started = false;
+            while(!started) {
+                if (hub.getName() != null) {
+                    Thread sendContent = new Thread(new SendContent(nodeName, socket, knownNodes, hub, rttVector, eventLog, maxNodes));
+                    sendContent.start();
+                    started = true;
+                }
+            }
 
         } catch (UnknownHostException e) {
             System.out.println(e.getMessage());
