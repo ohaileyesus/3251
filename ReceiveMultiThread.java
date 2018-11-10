@@ -10,7 +10,7 @@ public class ReceiveMultiThread implements Runnable {
     private String thisNode;
     private Map<String, MyNode> knownNodes;
     private DatagramSocket socket;
-    private static MyNode hub;
+    private MyNode hub;
     private Map<String, Long> rttVector;
     private Map<String, Long> rttSums = new HashMap<>();
     private ArrayList<String> eventLog;
