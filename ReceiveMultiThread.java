@@ -65,7 +65,7 @@ public class ReceiveMultiThread implements Runnable {
                         for (String nameOfNodeToAppend: nodesToAppend.keySet()) {
                             if (!knownNodes.containsKey(nameOfNodeToAppend)) {
                                 knownNodes.put(nameOfNodeToAppend, nodesToAppend.get(nameOfNodeToAppend));
-//                                eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A new node has been discovered");
+                                eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A new node has been discovered");
                             }
                         }
                         int sizeAfter = knownNodes.size();
@@ -223,11 +223,14 @@ public class ReceiveMultiThread implements Runnable {
                     int fileContentLength = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 66 + fileNameLength, 66 + fileNameLength + 4)).getInt();
 
                     byte[] fileContent = Arrays.copyOfRange(receivedData, 66 + fileNameLength + 4, 66 + fileNameLength + 4 + fileContentLength);
-                    File targetFile = new File("/" + fileName);
-                    OutputStream outStream = new FileOutputStream(targetFile);
-                    outStream.write(fileContent);
-                    System.out.println(fileName + " file received from " + senderName);
-
+                    try {
+                        File targetFile = new File(fileName);
+                        FileOutputStream outStream = new FileOutputStream(targetFile);
+                        outStream.write(fileContent);
+                        System.out.println(fileName + " file received from " + senderName);
+                    } catch (Exception e) {
+                        System.out.println("file failed :(");
+                    }
 
                     //if hub, forwards message to all other nodes except sender and hub itself
                     if (thisNode.equals(hub.getName())){
