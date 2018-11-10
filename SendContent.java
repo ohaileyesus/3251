@@ -144,7 +144,7 @@ public class SendContent implements Runnable{
                                 //send Delete Hub msg
                                 if (!thisNode.equals(neighborName)) {
                                     MyNode neighbor = knownNodes.get(neighborName);
-                                    byte[] message = prepareHeader(neighborName, hub.getName(), "Dhub");
+                                    byte[] message = prepareHeader(hub.getName(), neighborName, "Dhub");
                                     byte[] ipAsByteArr = convertIPtoByteArr(neighbor.getIP());
                                     InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
                                     DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, neighbor.getPort());
@@ -156,7 +156,7 @@ public class SendContent implements Runnable{
                                 //send Delete Regular msg
                                 if (!thisNode.equals(neighborName)) {
                                     MyNode neighbor = knownNodes.get(neighborName);
-                                    byte[] message = prepareHeader(neighborName, hub.getName(), "Dreg");
+                                    byte[] message = prepareHeader(hub.getName(), neighborName, "Dreg");
                                     byte[] ipAsByteArr = convertIPtoByteArr(neighbor.getIP());
                                     InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
                                     DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, neighbor.getPort());
