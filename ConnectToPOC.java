@@ -71,7 +71,7 @@ public class ConnectToPOC implements Runnable{
                     socket.receive(receivePacket);
                     System.out.println("received response");
                     byte[] receivedData = receivePacket.getData();
-                    String msgType = new String(Arrays.copyOfRange(receivedData, 0, 3));
+                    String msgType = new String(Arrays.copyOfRange(receivedData, 0, 4));
                     if (msgType.equals("POCc")) {
                         System.out.println("POC confirmation received");
 //                      Add pocNode to knownNodes map
