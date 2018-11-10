@@ -1,4 +1,6 @@
-public class MyNode{
+import java.io.Serializable;
+
+public class MyNode implements Serializable {
 
     private String name;
     private String ip;
