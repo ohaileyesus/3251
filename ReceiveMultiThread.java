@@ -261,6 +261,8 @@ public class ReceiveMultiThread implements Runnable {
                         }
                     }
 
+                    System.out.println("enter command");
+
                 } else if (msgType.equals("POCr")) {
 
                     System.out.println("POC connect message received");

@@ -44,7 +44,7 @@ public class StarNode{
             receiveThread.start();
 
 
-
+            Thread.sleep(5000);
 //          Sending content Thread
             boolean started = false;
             while(!started) {
