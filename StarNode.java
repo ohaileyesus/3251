@@ -46,16 +46,23 @@ public class StarNode{
             //Calculating RTT Thread - Yizra
             Thread sendRTT = new Thread(new SendRTT(nodeName, socket, knownNodes, eventLog));
             sendRTT.start();
-//
-            //Sending content Thread
-            boolean started = false;
-            while (!started ) {
-                if (hub != null) {
-                    Thread sendContent = new Thread(new SendContent(nodeName, socket, knownNodes, hub, rttVector, eventLog, maxNodes));
-                    sendContent.start();
-                    started = true;
+
+            while(true) {
+                if (hub!=null) {
+                    int num = 2 + 2;
                 }
             }
+
+//
+            //Sending content Thread
+//            boolean started = false;
+//            while (!started ) {
+//                if (hub != null) {
+//                    Thread sendContent = new Thread(new SendContent(nodeName, socket, knownNodes, hub, rttVector, eventLog, maxNodes));
+//                    sendContent.start();
+//                    started = true;
+//                }
+//            }
 
         } catch (UnknownHostException e) {
             System.out.println(e.getMessage());

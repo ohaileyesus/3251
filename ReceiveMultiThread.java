@@ -10,12 +10,11 @@ public class ReceiveMultiThread implements Runnable {
     private String thisNode;
     private Map<String, MyNode> knownNodes;
     private DatagramSocket socket;
-    private MyNode hub;
+    private static MyNode hub;
     private Map<String, Long> rttVector;
     private Map<String, Long> rttSums = new HashMap<>();
     private ArrayList<String> eventLog;
 
-    private boolean notFull = true;
 
     public ReceiveMultiThread(String thisNode, DatagramSocket socket, Map<String, MyNode> knownNodes, MyNode hub,
                               Map<String, Long> rttVector, ArrayList<String> eventLog) {
@@ -191,8 +190,7 @@ public class ReceiveMultiThread implements Runnable {
                     }
 
 //                  find hub if node has N rtt sums for the first time
-                    if (rttSums.size() == knownNodes.size() && notFull) {
-                        notFull = false;
+                    if (rttSums.size() == knownNodes.size()) {
 //                      find the node with the smallest rtt sum
                         long min = Long.MAX_VALUE;
                         MyNode minNode = null;
@@ -203,20 +201,7 @@ public class ReceiveMultiThread implements Runnable {
                             }
                         }
                         hub = minNode;
-
-//                  find new hub if there has been a change to rtt sum list
-                    } else if (rttSums.size() == knownNodes.size() && rttSums.containsKey(senderName)) {
-                        long min = Long.MAX_VALUE;
-                        MyNode minNode = null;
-                        for (String nodeName : knownNodes.keySet()) {
-                            if (rttSums.get(nodeName) < min) {
-                                min = rttSums.get(nodeName);
-                                minNode = knownNodes.get(nodeName);
-                            }
-                        }
-                        hub = minNode;
                     }
-
                 } else if (msgType.equals("Mfil")) {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A file has been received");
 
