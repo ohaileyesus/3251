@@ -70,20 +70,43 @@ public class ReceiveMultiThread implements Runnable {
                         e.printStackTrace();
                     }
 
-                    //pack knownNodes into proper format
-                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                    ObjectOutputStream os = new ObjectOutputStream(outputStream);
-                    os.writeObject(knownNodes);
 
-                    //update every node with new knownNodes set
-                    for (String name : knownNodes.keySet()) {
-                        MyNode neighbor = knownNodes.get(name);
-                        byte[] dataToSend = prepareHeader(neighbor.getName(), "PD");
-                        byte[] ipAsByteArr = convertIPtoByteArr(neighbor.getIP());
-                        InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
-                        DatagramPacket sendPacket = new DatagramPacket(dataToSend, dataToSend.length, ipAddress, neighbor.getPort());
-                        socket.send(sendPacket);
+                    //pack knownNodes into proper format
+                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                    ObjectOutputStream out;
+                    try {
+                        out = new ObjectOutputStream(bos);
+                        out.writeObject(knownNodes);
+                        out.flush();
+                        byte[] knownNodesAsByteArray = bos.toByteArray();
+
+                        //update every node with new knownNodes set
+                        for (String name : knownNodes.keySet()) {
+                            MyNode neighbor = knownNodes.get(name);
+                            byte[] dataToSend = prepareHeader(neighbor.getName(), "Pdis");
+
+                            //format of packet = 62 header bytes + 1 byte for object length + the objstream
+                            dataToSend[62] = (byte) knownNodesAsByteArray.length;
+                            int index = 63;
+                            for (int i = 0; i < knownNodesAsByteArray.length; i++) {
+                                dataToSend[index++] = knownNodesAsByteArray[i];
+                            }
+
+
+                            byte[] ipAsByteArr = convertIPtoByteArr(neighbor.getIP());
+                            InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
+                            DatagramPacket sendPacket = new DatagramPacket(dataToSend, dataToSend.length, ipAddress, neighbor.getPort());
+                            socket.send(sendPacket);
+                        }
+
+                    } finally {
+                        try {
+                            bos.close();
+                        } catch (IOException ex) {
+                            // ignore close exception
+                        }
                     }
+
 
 
                 } else if (msgType.equals("RTTm")) {
