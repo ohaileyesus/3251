@@ -77,7 +77,7 @@ public class ConnectToPOC implements Runnable{
                     if (msgType.equals("POCc")) {
                         System.out.println("POC confirmation received");
 //                      Add pocNode to knownNodes map
-                        String name = new String(Arrays.copyOfRange(receivedData, 30, 46));
+                        String name = new String(trim(Arrays.copyOfRange(receivedData, 30, 46)));
                         MyNode pocNode = new MyNode(name, pocIP, pocPort);
                         knownNodes.put(name, pocNode);
                         System.out.println("poc connected");
@@ -180,6 +180,17 @@ public class ConnectToPOC implements Runnable{
             ipAsByteArr[i] = (byte) temp;
         }
         return ipAsByteArr;
+    }
+
+    public byte[] trim(byte[] bytes)
+    {
+        int i = bytes.length - 1;
+        while (i >= 0 && bytes[i] == 0)
+        {
+            --i;
+        }
+
+        return Arrays.copyOf(bytes, i + 1);
     }
 
 }
