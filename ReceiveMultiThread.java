@@ -210,6 +210,9 @@ public class ReceiveMultiThread implements Runnable {
                         hub.setIp(minNode.getIP());
                         hub.setPort(minNode.getPort());
 
+                        Thread sendContent = new Thread(new SendContent(thisNode, socket, knownNodes, hub, rttVector, eventLog));
+                        sendContent.start();
+
                     }
                 } else if (msgType.equals("Mfil")) {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A file has been received");

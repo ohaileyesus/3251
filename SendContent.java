@@ -24,7 +24,7 @@ public class SendContent implements Runnable{
 
 
     public SendContent(String thisNode, DatagramSocket socket, Map<String, MyNode> knownNodes, MyNode hub,
-                       Map<String, Long> rttVector, ArrayList<String> eventLog, int maxNodes) {
+                       Map<String, Long> rttVector, ArrayList<String> eventLog) {
         this.thisNode = thisNode;
         this.socket = socket;
         this.knownNodes = knownNodes;

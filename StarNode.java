@@ -44,16 +44,16 @@ public class StarNode{
             receiveThread.start();
 
 
-            Thread.sleep(5000);
-//          Sending content Thread
-            boolean started = false;
-            while(!started) {
-                if (hub.getName() != null) {
-                    Thread sendContent = new Thread(new SendContent(nodeName, socket, knownNodes, hub, rttVector, eventLog, maxNodes));
-                    sendContent.start();
-                    started = true;
-                }
-            }
+//            Thread.sleep(10000);
+////          Sending content Thread
+//            boolean started = false;
+//            while(!started) {
+//                if (hub.getName() != null) {
+//                    Thread sendContent = new Thread(new SendContent(nodeName, socket, knownNodes, hub, rttVector, eventLog, maxNodes));
+//                    sendContent.start();
+//                    started = true;
+//                }
+//            }
 
         } catch (UnknownHostException e) {
             System.out.println(e.getMessage());
