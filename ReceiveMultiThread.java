@@ -64,7 +64,7 @@ public class ReceiveMultiThread implements Runnable {
                         for (String nameOfNodeToAppend: nodesToAppend.keySet()) {
                             if (!knownNodes.containsKey(nameOfNodeToAppend)) {
                                 knownNodes.put(nameOfNodeToAppend, nodesToAppend.get(nameOfNodeToAppend));
-//                                eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A new node has been discovered");
+                                eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A new node has been discovered");
                             }
                         }
                         int sizeAfter = knownNodes.size();

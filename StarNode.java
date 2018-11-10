@@ -11,7 +11,7 @@ public class StarNode{
     static Map<String, MyNode> knownNodes = new HashMap<String, MyNode>();
     static MyNode hub = null;
     static Map<String, Integer> rttVector = null;
-    static ArrayList<String> eventLog = null;
+    static ArrayList<String> eventLog = new ArrayList<>();
 
     public static void main(String[] args) throws Exception{
 
