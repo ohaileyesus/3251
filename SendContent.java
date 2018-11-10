@@ -46,7 +46,7 @@ public class SendContent implements Runnable{
 
                         //if ASCII message
                         if (request.contains("\"")) {
-                            byte[] message = prepareHeader(thisNode, hub.getName(), "CMA");
+                            byte[] message = prepareHeader(thisNode, hub.getName(), "Masc");
 
                             //Put text in body of packet
                             byte[] text = request.substring(5, request.length()).getBytes();
@@ -79,7 +79,7 @@ public class SendContent implements Runnable{
                                 //put file into fileinputstream
                                 FileInputStream fileInputStream = new FileInputStream(file);
                                 fileInputStream.read(fileAsByteArr);
-                                byte[] message = prepareHeader(thisNode, hub.getName(), "CMF");
+                                byte[] message = prepareHeader(thisNode, hub.getName(), "Mfil");
 
                                 //format of packet = 62 bytes header + 4 bytes filename length + filename + 4 byte file length + file
 

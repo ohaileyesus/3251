@@ -43,14 +43,6 @@ public class StarNode{
             Thread receiveThread = new Thread(new ReceiveMultiThread(nodeName, socket, knownNodes, hub, rttVector, eventLog));
             receiveThread.start();
 
-            //Calculating RTT Thread - Yizra
-//            Thread sendRTT = new Thread(new SendRTT(nodeName, socket, knownNodes, eventLog));
-//            sendRTT.start();
-
-            Thread.sleep(20000);
-            int size = rttVector.size();
-            String name = hub.getName();
-            int i = 1 + 1;
 
 
 //          Sending content Thread
