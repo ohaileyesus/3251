@@ -1,4 +1,6 @@
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -79,6 +81,43 @@ public class ConnectToPOC implements Runnable{
                         MyNode pocNode = new MyNode(name, pocIP, pocPort);
                         knownNodes.put(name, pocNode);
                         System.out.println("poc connected");
+
+
+                        //pack knownNodes into proper format
+                        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                        ObjectOutputStream out;
+                        try {
+                            out = new ObjectOutputStream(bos);
+                            out.writeObject(knownNodes);
+                            out.flush();
+                            byte[] knownNodesAsByteArray = bos.toByteArray();
+
+                            //update every node with new knownNodes set
+                            for (String neighborName : knownNodes.keySet()) {
+                                MyNode neighbor = knownNodes.get(neighborName);
+                                byte[] dataToSend = prepareHeader(thisNode.getName(), neighbor.getName(), "Pdis");
+
+                                //format of packet = 62 header bytes + 1 byte for object length + the objstream
+                                dataToSend[62] = (byte) knownNodesAsByteArray.length;
+                                int ind = 63;
+                                for (int i = 0; i < knownNodesAsByteArray.length; i++) {
+                                    dataToSend[index++] = knownNodesAsByteArray[i];
+                                }
+
+                                DatagramPacket sendPacket2 = new DatagramPacket(dataToSend, dataToSend.length, ipAddress, neighbor.getPort());
+                                socket.send(sendPacket2);
+                            }
+
+                        } finally {
+                            try {
+                                bos.close();
+                            } catch (IOException ex) {
+                                // ignore close exception
+                            }
+                        }
+
+
+
                         break;
                     }
                 } catch (SocketTimeoutException e) {
