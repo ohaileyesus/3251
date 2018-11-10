@@ -24,7 +24,8 @@ public class SendRTT implements  Runnable{
     public void run() {
 
         try {
-                for (String name : knownNodes.keySet()) {
+            for (String name : knownNodes.keySet()) {
+                if (!name.equals(thisNode)) {
                     MyNode myNode = knownNodes.get(name);
                     byte[] ipAsByteArr = convertIPtoByteArr(myNode.getIP());
                     InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
@@ -32,11 +33,12 @@ public class SendRTT implements  Runnable{
                     DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, myNode.getPort());
                     socket.send(sendPacket);
                 }
-                try {
-                    Thread.sleep(5000);
-                }  catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                }
+            }
+            try {
+                Thread.sleep(5000);
+            }  catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+            }
 
         } catch (UnknownHostException e) {
             System.out.println(e.getMessage());
