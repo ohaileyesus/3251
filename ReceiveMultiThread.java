@@ -304,10 +304,9 @@ public class ReceiveMultiThread implements Runnable {
                 } else if (msgType.equals("Dreg")) {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A non-hub node has disconnected");
                     //remove from knownNodes, rttVector, and rttSums
-                    String nodeToDelete = new String(Arrays.copyOfRange(receivedData, 30, 46));
-                    knownNodes.remove(nodeToDelete);
-                    rttVector.remove(nodeToDelete);
-                    rttSums.remove(nodeToDelete);
+                    knownNodes.remove(senderName);
+                    rttVector.remove(senderName);
+                    rttSums.remove(senderName);
                 }
             }
 
