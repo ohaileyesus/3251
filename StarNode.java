@@ -48,7 +48,7 @@ public class StarNode{
             sendRTT.start();
 
             Thread.sleep(30000);
-            String name = hub.getName();
+            int size = rttVector.size();
             int i = 1 + 1;
 
 //            while(true) {
