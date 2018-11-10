@@ -241,7 +241,7 @@ public class ReceiveMultiThread implements Runnable {
                     InetAddress ipAddress = InetAddress.getByAddress(Arrays.copyOfRange(receivedData, 62, 66));
                     int port = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 66, 70)).getInt();
 
-                    DatagramPacket sendPacket = new DatagramPacket(receivedData, receivedData.length, ipAddress, port);
+                    DatagramPacket sendPacket = new DatagramPacket(message, message.length, ipAddress, port);
                     socket.send(sendPacket);
                     System.out.println("POC confirmation sent");
 
