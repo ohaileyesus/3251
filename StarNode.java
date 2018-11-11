@@ -33,7 +33,7 @@ public class StarNode{
 
             DatagramSocket socket = new DatagramSocket(localPort, InetAddress.getLocalHost());
 
-            if(pocIPAddress.equals("0") && pocPort != 0) {
+            if(pocIPAddress.equals("0") || pocPort != 0) {
                 //POC Connect Thread
                 Thread pocConnect = new Thread(new ConnectToPOC(currentNode, knownNodes, pocIPAddress, pocPort, socket));
                 pocConnect.start();

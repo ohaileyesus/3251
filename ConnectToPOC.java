@@ -116,9 +116,7 @@ public class ConnectToPOC implements Runnable{
                                 socket.send(sendPacket2);
                                 System.out.println("peer discovery packet sent");
 
-                                System.out.println("break");
-                                socket.setSoTimeout(0);
-                                break;
+
                             }
 
                         } finally {
@@ -129,7 +127,9 @@ public class ConnectToPOC implements Runnable{
                             }
                         }
 
-
+                        System.out.println("break");
+                        socket.setSoTimeout(0);
+                        break;
 
                     }
                 } catch (SocketTimeoutException e) {
