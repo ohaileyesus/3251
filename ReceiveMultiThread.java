@@ -53,80 +53,131 @@ public class ReceiveMultiThread implements Runnable {
                 byte[] destNameBytes = trim(Arrays.copyOfRange(receivedData, 46, 62));
                 String destName = new String(destNameBytes);
 
-                System.out.println("message type received: " + msgType);
+
+                if (msgType.equals("RTTr")) {
+                    System.out.println("message type received: " + msgType + " from " + destName);
+                } else if (msgType.equals("RTTr")){
+                    System.out.println("message type received: " + msgType + " from " + senderName);
+                }
 
                 if (msgType.equals("Pdis")) {
 
                     try {
-                        //read knownNodes list from object input stream
                         int length = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 62, 66)).getInt();
                         ByteArrayInputStream in = new ByteArrayInputStream(Arrays.copyOfRange(receivedData, 66, 66 + length));
                         ObjectInputStream is = new ObjectInputStream(in);
 
                         Map<String, MyNode> nodesToAppend = (Map<String, MyNode>) is.readObject();
 
-                        //add unknown nodes to knownNodes map
-                        int sizeBefore = knownNodes.size();
-                        for (String nameOfNodeToAppend: nodesToAppend.keySet()) {
+                        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                        ObjectOutputStream out;
+                        try {
+                            out = new ObjectOutputStream(bos);
+                            out.writeObject(knownNodes);
+                            out.flush();
+                            byte[] knownNodesAsByteArray = bos.toByteArray();
+
+
+                            byte[] dataToSend = prepareHeader(senderName, "KNLI");
+
+                            //format of packet = 62 header bytes + 4 byte for object length + the objstream
+                            int lengthOfKnownNodes = knownNodesAsByteArray.length;
+                            byte[] lengthBytes = ByteBuffer.allocate(4).putInt(lengthOfKnownNodes).array();
+                            dataToSend[62] = lengthBytes[0];
+                            dataToSend[63] = lengthBytes[1];
+                            dataToSend[64] = lengthBytes[2];
+                            dataToSend[65] = lengthBytes[3];
+
+
+                            int index = 66;
+                            for (int i = 0; i < knownNodesAsByteArray.length; i++) {
+                                dataToSend[index++] = knownNodesAsByteArray[i];
+                            }
+
+
+                            byte[] ipAsByteArr = convertIPtoByteArr(nodesToAppend.get(senderName).getIP());
+                            InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
+                            DatagramPacket sendPacket = new DatagramPacket(dataToSend, dataToSend.length, ipAddress, nodesToAppend.get(senderName).getPort());
+                            socket.send(sendPacket);
+
+
+                        } finally {
+                            try {
+                                bos.close();
+                            } catch (IOException ex) {
+                                // ignore close exception
+                            }
+                        }
+                    } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        System.out.println(e.toString());
+                    }
+
+
+                } else if (msgType.equals("KNLI")) {
+
+
+                    try {
+                        int length = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 62, 66)).getInt();
+                        ByteArrayInputStream in = new ByteArrayInputStream(Arrays.copyOfRange(receivedData, 66, 66 + length));
+                        ObjectInputStream is = new ObjectInputStream(in);
+
+                        Map<String, MyNode> nodesToAppend = (Map<String, MyNode>) is.readObject();
+
+                        for (String nameOfNodeToAppend : nodesToAppend.keySet()) {
                             if (!knownNodes.containsKey(nameOfNodeToAppend)) {
                                 knownNodes.put(nameOfNodeToAppend, nodesToAppend.get(nameOfNodeToAppend));
                                 eventLog.add(String.valueOf(System.currentTimeMillis()) + ": A new node has been discovered");
                             }
                         }
-                        int sizeAfter = knownNodes.size();
 
-                        //if knownNodes was already up to date, no need to continue
-                        if (sizeBefore != sizeAfter) {
-
-                            //pack knownNodes into proper format
-                            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                            ObjectOutputStream out;
-                            try {
-                                out = new ObjectOutputStream(bos);
-                                out.writeObject(knownNodes);
-                                out.flush();
-                                byte[] knownNodesAsByteArray = bos.toByteArray();
-
-                                //update every node with new knownNodes set
-                                for (String name : knownNodes.keySet()) {
-                                    if (!thisNode.equals(name)) {
-                                        MyNode neighbor = knownNodes.get(name);
-                                        byte[] dataToSend = prepareHeader(neighbor.getName(), "Pdis");
-
-                                        //format of packet = 62 header bytes + 4 byte for object length + the objstream
-                                        int lengthOfKnownNodes = knownNodesAsByteArray.length;
-                                        byte[] lengthBytes = ByteBuffer.allocate(4).putInt(lengthOfKnownNodes).array();
-                                        dataToSend[62] = lengthBytes[0];
-                                        dataToSend[63] = lengthBytes[1];
-                                        dataToSend[64] = lengthBytes[2];
-                                        dataToSend[65] = lengthBytes[3];
+                        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                        ObjectOutputStream out;
+                        try {
+                            out = new ObjectOutputStream(bos);
+                            out.writeObject(knownNodes.get(thisNode));
+                            out.flush();
+                            byte[] knownNodesAsByteArray = bos.toByteArray();
 
 
-                                        int index = 66;
-                                        for (int i = 0; i < knownNodesAsByteArray.length; i++) {
-                                            dataToSend[index++] = knownNodesAsByteArray[i];
-                                        }
+                            for (String name : nodesToAppend.keySet()) {
+                                if (!thisNode.equals(name)) {
+                                    MyNode neighbor = nodesToAppend.get(name);
+                                    byte[] dataToSend = prepareHeader(neighbor.getName(), "MYNA");
+
+                                    //format of packet = 62 header bytes + 4 byte for object length + the objstream
+                                    int lengthOfKnownNodes = knownNodesAsByteArray.length;
+                                    byte[] lengthBytes = ByteBuffer.allocate(4).putInt(lengthOfKnownNodes).array();
+                                    dataToSend[62] = lengthBytes[0];
+                                    dataToSend[63] = lengthBytes[1];
+                                    dataToSend[64] = lengthBytes[2];
+                                    dataToSend[65] = lengthBytes[3];
 
 
-                                        byte[] ipAsByteArr = convertIPtoByteArr(neighbor.getIP());
-                                        InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
-                                        DatagramPacket sendPacket = new DatagramPacket(dataToSend, dataToSend.length, ipAddress, neighbor.getPort());
-                                        socket.send(sendPacket);
+                                    int index = 66;
+                                    for (int i = 0; i < knownNodesAsByteArray.length; i++) {
+                                        dataToSend[index++] = knownNodesAsByteArray[i];
                                     }
-                                }
 
-                            } finally {
-                                try {
-                                    bos.close();
-                                } catch (IOException ex) {
-                                    // ignore close exception
+
+                                    byte[] ipAsByteArr = convertIPtoByteArr(neighbor.getIP());
+                                    InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
+                                    DatagramPacket sendPacket = new DatagramPacket(dataToSend, dataToSend.length, ipAddress, neighbor.getPort());
+                                    socket.send(sendPacket);
                                 }
                             }
-                        }
 
+
+                        } finally {
+                            try {
+                                bos.close();
+                            } catch (IOException ex) {
+                                // ignore close exception
+                            }
+                        }
                         Thread sendRTT = new Thread(new SendRTT(thisNode, socket, knownNodes, eventLog));
                         sendRTT.start();
-
 
                     } catch (ClassNotFoundException e) {
                         e.printStackTrace();
@@ -135,10 +186,28 @@ public class ReceiveMultiThread implements Runnable {
                     }
 
 
+                } else if (msgType.equals("MYNA")) {
 
 
+                    try {
+                        int length = ByteBuffer.wrap(Arrays.copyOfRange(receivedData, 62, 66)).getInt();
+                        ByteArrayInputStream in = new ByteArrayInputStream(Arrays.copyOfRange(receivedData, 66, 66 + length));
+                        ObjectInputStream is = new ObjectInputStream(in);
 
-                } else if (msgType.equals("RTTm")) {
+                        MyNode newNode = (MyNode) is.readObject();
+
+                        knownNodes.put(newNode.getName(), newNode);
+
+                    } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                    } catch (IOException e) {
+                        System.out.println(e.toString());
+                    }
+
+                    Thread sendRTT = new Thread(new SendRTT(thisNode, socket, knownNodes, eventLog));
+                    sendRTT.start();
+
+                }  else if (msgType.equals("RTTm")) {
                     eventLog.add(String.valueOf(System.currentTimeMillis()) + ": An RTT request has been received");
 
 //                  change RTTm to RTTr
@@ -170,6 +239,25 @@ public class ReceiveMultiThread implements Runnable {
                             rttSum += rttVector.get(name);
                         }
                         rttSums.put(thisNode, rttSum);
+
+                        if (rttSums.size() == knownNodes.size()) {
+//                      find the node with the smallest rtt sum
+                            long min = Long.MAX_VALUE;
+                            MyNode minNode = null;
+                            for (String nodeName : knownNodes.keySet()) {
+                                if (rttSums.get(nodeName) < min) {
+                                    min = rttSums.get(nodeName);
+                                    minNode = knownNodes.get(nodeName);
+                                }
+                            }
+                            hub.setName(minNode.getName());
+                            hub.setIp(minNode.getIP());
+                            hub.setPort(minNode.getPort());
+
+                            Thread sendContent = new Thread(new SendContent(thisNode, socket, knownNodes, hub, rttVector, eventLog));
+                            sendContent.start();
+
+                        }
 
 //                      Send rttSum to all nodes
                         for (String name : knownNodes.keySet()) {
@@ -334,33 +422,29 @@ public class ReceiveMultiThread implements Runnable {
                         out.flush();
                         byte[] knownNodesAsByteArray = bos.toByteArray();
 
-                        //update every node with new knownNodes set
-                        for (String neighborName : knownNodes.keySet()) {
-                            //dont send to self?///////////////////////////////////////////////////////////////////////////////////////////////
-                            MyNode neighbor = knownNodes.get(neighborName);
-                            byte[] dataToSend = prepareHeader(neighbor.getName(), "Pdis");
 
-                            //format of packet = 62 header bytes + 4 byte for object length + the objstream
-                            int length = knownNodesAsByteArray.length;
-                            byte[] lengthBytes = ByteBuffer.allocate(4).putInt(length).array();
-                            dataToSend[62] = lengthBytes[0];
-                            dataToSend[63] = lengthBytes[1];
-                            dataToSend[64] = lengthBytes[2];
-                            dataToSend[65] = lengthBytes[3];
+                        byte[] dataToSend = prepareHeader(name, "Pdis");
+
+                        //format of packet = 62 header bytes + 4 byte for object length + the objstream
+                        int length = knownNodesAsByteArray.length;
+                        byte[] lengthBytes = ByteBuffer.allocate(4).putInt(length).array();
+                        dataToSend[62] = lengthBytes[0];
+                        dataToSend[63] = lengthBytes[1];
+                        dataToSend[64] = lengthBytes[2];
+                        dataToSend[65] = lengthBytes[3];
 
 
 
-                            int ind = 66;
-                            for (int i = 0; i < knownNodesAsByteArray.length; i++) {
-                                dataToSend[ind++] = knownNodesAsByteArray[i];
-                            }
-
-                            byte[] ipAsByteArr = convertIPtoByteArr(neighbor.getIP());
-                            InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
-                            DatagramPacket sendPacket2 = new DatagramPacket(dataToSend, dataToSend.length, ipAddress, neighbor.getPort());
-                            socket.send(sendPacket2);
-                            System.out.println("peer discovery packet sent");
+                        int ind = 66;
+                        for (int i = 0; i < knownNodesAsByteArray.length; i++) {
+                            dataToSend[ind++] = knownNodesAsByteArray[i];
                         }
+
+                        byte[] ipAsByteArr = convertIPtoByteArr(pocIP);
+                        InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
+                        DatagramPacket sendPacket2 = new DatagramPacket(dataToSend, dataToSend.length, ipAddress, pocPort);
+                        socket.send(sendPacket2);
+                        System.out.println("peer discovery packet sent");
 
                         bos.close();
 
