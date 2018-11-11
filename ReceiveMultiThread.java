@@ -56,7 +56,7 @@ public class ReceiveMultiThread implements Runnable {
 
                 if (msgType.equals("RTTr")) {
                     System.out.println("message type received: " + msgType + " from " + destName);
-                } else if (msgType.equals("RTTr")){
+                } else {
                     System.out.println("message type received: " + msgType + " from " + senderName);
                 }
 
