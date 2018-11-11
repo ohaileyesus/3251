@@ -115,6 +115,10 @@ public class ConnectToPOC implements Runnable{
                                 DatagramPacket sendPacket2 = new DatagramPacket(dataToSend, dataToSend.length, ipAddress, neighbor.getPort());
                                 socket.send(sendPacket2);
                                 System.out.println("peer discovery packet sent");
+
+                                System.out.println("break");
+                                socket.setSoTimeout(0);
+                                break;
                             }
 
                         } finally {
@@ -126,9 +130,7 @@ public class ConnectToPOC implements Runnable{
                         }
 
 
-                        System.out.println("break");
-                        socket.setSoTimeout(0);
-                        break;
+
                     }
                 } catch (SocketTimeoutException e) {
 
