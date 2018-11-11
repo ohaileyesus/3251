@@ -166,6 +166,7 @@ public class SendContent implements Runnable{
                                 }
                             }
                         }
+                        System.exit(0);
 
                     } else if (request.contains("show-log")) {
                         for (String event : eventLog) {
