@@ -5,6 +5,7 @@ public class MyNode implements Serializable {
     private String name;
     private String ip;
     private int port;
+    private static final long serialVersionUID = 1113799434508676095L;
 
     public void setPort(int port) {
         this.port = port;
