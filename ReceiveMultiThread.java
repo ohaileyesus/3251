@@ -4,6 +4,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.*;
+import java.util.concurrent.Exchanger;
 
 public class ReceiveMultiThread implements Runnable {
 
@@ -14,16 +15,20 @@ public class ReceiveMultiThread implements Runnable {
     private Map<String, Long> rttVector;
     private Map<String, Long> rttSums = new HashMap<>();
     private ArrayList<String> eventLog;
+    private String pocIP;
+    private int pocPort;
 
 
     public ReceiveMultiThread(String thisNode, DatagramSocket socket, Map<String, MyNode> knownNodes, MyNode hub,
-                              Map<String, Long> rttVector, ArrayList<String> eventLog) {
+                              Map<String, Long> rttVector, ArrayList<String> eventLog, String pocIP, int pocPort ) {
         this.thisNode = thisNode;
         this.socket = socket;
         this.knownNodes = knownNodes;
         this.hub = hub;
         this.rttVector = rttVector;
         this.eventLog = eventLog;
+        this.pocIP = pocIP;
+        this.pocPort = pocPort;
     }
 
     public void run() {
@@ -307,7 +312,76 @@ public class ReceiveMultiThread implements Runnable {
                     knownNodes.remove(senderName);
                     rttVector.remove(senderName);
                     rttSums.remove(senderName);
+
+
+
+
+
+                } else if (msgType.equals("POCc")) {
+                    System.out.println("POC confirmation received");
+//                  Add pocNode to knownNodes map
+                    String name = new String(trim(Arrays.copyOfRange(receivedData, 30, 46)));
+                    MyNode pocNode = new MyNode(name, pocIP, pocPort);
+                    knownNodes.put(name, pocNode);
+                    System.out.println("poc connected");
+
+                    //pack knownNodes into proper format
+                    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                    ObjectOutputStream out;
+                    try {
+                        out = new ObjectOutputStream(bos);
+                        out.writeObject(knownNodes);
+                        out.flush();
+                        byte[] knownNodesAsByteArray = bos.toByteArray();
+
+                        //update every node with new knownNodes set
+                        for (String neighborName : knownNodes.keySet()) {
+                            //dont send to self?///////////////////////////////////////////////////////////////////////////////////////////////
+                            MyNode neighbor = knownNodes.get(neighborName);
+                            byte[] dataToSend = prepareHeader(neighbor.getName(), "Pdis");
+
+                            //format of packet = 62 header bytes + 4 byte for object length + the objstream
+                            int length = knownNodesAsByteArray.length;
+                            byte[] lengthBytes = ByteBuffer.allocate(4).putInt(length).array();
+                            dataToSend[62] = lengthBytes[0];
+                            dataToSend[63] = lengthBytes[1];
+                            dataToSend[64] = lengthBytes[2];
+                            dataToSend[65] = lengthBytes[3];
+
+
+
+                            int ind = 66;
+                            for (int i = 0; i < knownNodesAsByteArray.length; i++) {
+                                dataToSend[ind++] = knownNodesAsByteArray[i];
+                            }
+
+                            byte[] ipAsByteArr = convertIPtoByteArr(neighbor.getIP());
+                            InetAddress ipAddress = InetAddress.getByAddress(ipAsByteArr);
+                            DatagramPacket sendPacket2 = new DatagramPacket(dataToSend, dataToSend.length, ipAddress, neighbor.getPort());
+                            socket.send(sendPacket2);
+                            System.out.println("peer discovery packet sent");
+                        }
+
+                        bos.close();
+
+                    } catch (Exception e) {
+
+                    }
+
                 }
+
+
+
+
+
+
+
+
+
+
+
+
+
             }
 
         } catch (Exception e) {
